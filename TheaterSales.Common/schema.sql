@@ -19,6 +19,5 @@ CREATE TABLE IF NOT EXISTS sales (
     UNIQUE(theater_id, movie_id, sale_date)
 );
 
--- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(sale_date);
 CREATE INDEX IF NOT EXISTS idx_sales_theater_date ON sales(theater_id, sale_date);
