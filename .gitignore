@@ -493,10 +493,10 @@ TrinitySQL.Server/src/*.sql
 
 # SQLite test databases
 *.db
-!TrinitySQL.Common/test_database.db
+!TrinitySQL.Context/test_database.db
 
-# Copied SQL files (except in TrinitySQL.Common)
+# Copied SQL files (except in TrinitySQL.Context)
 **/schema.sql
 **/seed_data.sql
 **/test_fixtures.sql
-!TrinitySQL.Common/*.sql
+!TrinitySQL.Context/*.sql

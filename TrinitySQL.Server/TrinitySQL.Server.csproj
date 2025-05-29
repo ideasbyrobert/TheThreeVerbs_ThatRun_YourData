@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="../TrinitySQL.Common/*.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../TrinitySQL.Context/*.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

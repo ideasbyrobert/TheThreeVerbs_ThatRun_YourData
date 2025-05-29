@@ -4,7 +4,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinitySQL.Blueprint", "TrinitySQL.Blueprint\TrinitySQL.Blueprint.csproj", "{8B9A3C4D-1234-4567-8901-123456789012}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinitySQL.Common", "TrinitySQL.Common\TrinitySQL.Common.csproj", "{9C8B4D5E-2345-5678-9012-234567890123}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinitySQL.Context", "TrinitySQL.Context\TrinitySQL.Context.csproj", "{9C8B4D5E-2345-5678-9012-234567890123}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinitySQL.Server", "TrinitySQL.Server\TrinitySQL.Server.csproj", "{AD9C5E6F-3456-6789-0123-345678901234}"
 EndProject

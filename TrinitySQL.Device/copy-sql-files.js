@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 
-const sqlDir = path.join(__dirname, '..', 'TheaterSales.Common')
+const sqlDir = path.join(__dirname, '..', 'TrinitySQL.Context')
 const distDir = path.join(__dirname, 'dist')
 
 if (!fs.existsSync(distDir))

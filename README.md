@@ -23,7 +23,7 @@ npm test
 ## Project Structure
 
 - **TrinitySQL.Blueprint** - Reference implementations demonstrating Map-Filter-Reduce patterns in action
-- **TrinitySQL.Common** - Shared database fixtures and test data
+- **TrinitySQL.Context** - Theater domain context providing the case study for exploration
 - **TrinitySQL.Device** - Implementation for user devices (browsers, mobile, IoT) with local resource processing
 - **TrinitySQL.Strategy** - The library providing multiple execution strategies (immediate, lazy, memoized, batched)
 - **TrinitySQL.Server** - Backend implementation with shared resource processing
