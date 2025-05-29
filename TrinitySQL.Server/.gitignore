@@ -1,0 +1,10 @@
+# .NET Library
+bin/
+obj/
+
+# Database files
+*.db
+*.db-journal
+
+# Copied SQL files (these come from TrinitySQL.Context)
+*.sql

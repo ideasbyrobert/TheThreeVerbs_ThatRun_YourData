@@ -1,0 +1,7 @@
+# .NET Library
+bin/
+obj/
+
+# NuGet packages (if any)
+*.nupkg
+*.snupkg

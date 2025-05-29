@@ -1,0 +1,16 @@
+# Context Data Files
+# All SQL files in this directory are intentionally version controlled
+# as they provide the case study context for exploration
+
+# Generated database files
+test_database.db
+*.db-journal
+
+# .NET build artifacts
+bin/
+obj/
+
+# Temporary/backup files only
+*.tmp
+*.bak
+*~

@@ -1,0 +1,11 @@
+# .NET Test Project
+bin/
+obj/
+TestResults/
+
+# Test databases
+*.db
+
+# Coverage reports
+coverage/
+TestCoverage/
