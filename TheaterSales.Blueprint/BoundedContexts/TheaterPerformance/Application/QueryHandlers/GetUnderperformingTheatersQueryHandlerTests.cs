@@ -4,11 +4,11 @@ using TheaterSales.DotNet.Data;
 using TheaterSales.DotNet.Domain;
 using TheaterSales.Extended.MapFilterReduce;
 using TheaterSales.DotNet.Infrastructure;
-using TheaterSales.DotNet.Tests.TestInfrastructure;
+using TheaterSales.DotNet.Core.SharedKernel;
 using TheaterSales.DotNet.BoundedContexts.TheaterPerformance.Application.Queries;
 using TheaterSales.DotNet.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
 
-namespace TheaterSales.DotNet.Tests.BoundedContexts.TheaterPerformance.Application.QueryHandlers;
+namespace TheaterSales.Blueprint.BoundedContexts.TheaterPerformance.Application.QueryHandlers;
 
 [TestClass]
 public class GetUnderperformingTheatersQueryHandlerTests
@@ -16,7 +16,7 @@ public class GetUnderperformingTheatersQueryHandlerTests
     private string _dbPath = null!;
     private string _connectionString = null!;
     private TheaterSalesContext _context = null!;
-    private QueryDispatcher _dispatcher = null!;
+    private IQueryDispatcher _dispatcher = null!;
 
     [TestInitialize]
     public void Initialize()
@@ -31,7 +31,8 @@ public class GetUnderperformingTheatersQueryHandlerTests
         var optionsBuilder = new DbContextOptionsBuilder<TheaterSalesContext>();
         optionsBuilder.UseSqlite(_connectionString);
         _context = new TheaterSalesContext(optionsBuilder.Options);
-        _dispatcher = TestQueryDispatcher.Create(_context);
+        var serviceConfig = new ServiceConfiguration(_context);
+        _dispatcher = serviceConfig.QueryDispatcher;
     }
 
     [TestCleanup]

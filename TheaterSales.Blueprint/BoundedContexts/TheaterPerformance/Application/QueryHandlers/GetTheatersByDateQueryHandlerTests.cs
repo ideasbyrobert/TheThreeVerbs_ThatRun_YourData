@@ -4,11 +4,11 @@ using TheaterSales.DotNet.Data;
 using TheaterSales.DotNet.Domain;
 using TheaterSales.Extended.MapFilterReduce;
 using TheaterSales.DotNet.Infrastructure;
-using TheaterSales.DotNet.Tests.TestInfrastructure;
+using TheaterSales.DotNet.Core.SharedKernel;
 using TheaterSales.DotNet.BoundedContexts.TheaterPerformance.Application.Queries;
 using TheaterSales.DotNet.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
 
-namespace TheaterSales.DotNet.Tests.BoundedContexts.TheaterPerformance.Application.QueryHandlers;
+namespace TheaterSales.Blueprint.BoundedContexts.TheaterPerformance.Application.QueryHandlers;
 
 [TestClass]
 public class GetTheatersByDateQueryHandlerTests
@@ -16,7 +16,7 @@ public class GetTheatersByDateQueryHandlerTests
     private string _dbPath = null!;
     private string _connectionString = null!;
     private TheaterSalesContext _context = null!;
-    private QueryDispatcher _dispatcher = null!;
+    private IQueryDispatcher _dispatcher = null!;
 
     [TestInitialize]
     public void Initialize()
@@ -31,7 +31,8 @@ public class GetTheatersByDateQueryHandlerTests
         var optionsBuilder = new DbContextOptionsBuilder<TheaterSalesContext>();
         optionsBuilder.UseSqlite(_connectionString);
         _context = new TheaterSalesContext(optionsBuilder.Options);
-        _dispatcher = TestQueryDispatcher.Create(_context);
+        var serviceConfig = new ServiceConfiguration(_context);
+        _dispatcher = serviceConfig.QueryDispatcher;
     }
 
     [TestCleanup]
@@ -206,21 +207,4 @@ public class GetTheatersByDateQueryHandlerTests
                $"which should be >= theater at index {index} with revenue {currentRevenue}";
     }
 
-    [TestMethod]
-    public void Handle_PublishesTheaterPerformanceQueriedEvent()
-    {
-        var queryDate = new DateOnly(2024, 5, 9);
-
-        var query = new GetTheatersByDateQuery(queryDate);
-        var results = _dispatcher
-            .Dispatch<GetTheatersByDateQuery, IEnumerable<TheaterPerformanceResult>>(query);
-
-        AssertQueryProducedResults(results);
-    }
-
-    private void AssertQueryProducedResults(
-        IEnumerable<TheaterPerformanceResult> results)
-    {
-        Assert.IsNotNull(results);
-    }
 }
