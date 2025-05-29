@@ -15,18 +15,18 @@ dotnet test
 
 ### Run Device Examples
 ```bash
-cd TheaterSales.Device
+cd FunctionalSQL.Device
 npm install
 npm test
 ```
 
 ## Project Structure
 
-- **TheaterSales.Blueprint** - Reference implementations demonstrating Map-Filter-Reduce patterns in action
-- **TheaterSales.Common** - Shared database fixtures and test data
-- **TheaterSales.Device** - Implementation for user devices (browsers, mobile, IoT) with local resource processing
-- **TheaterSales.Strategy** - The library providing multiple execution strategies (immediate, lazy, memoized, batched)
-- **TheaterSales.Server** - Backend implementation with shared resource processing
+- **FunctionalSQL.Blueprint** - Reference implementations demonstrating Map-Filter-Reduce patterns in action
+- **FunctionalSQL.Common** - Shared database fixtures and test data
+- **FunctionalSQL.Device** - Implementation for user devices (browsers, mobile, IoT) with local resource processing
+- **FunctionalSQL.Strategy** - The library providing multiple execution strategies (immediate, lazy, memoized, batched)
+- **FunctionalSQL.Server** - Backend implementation with shared resource processing
 
 ## Core Insight
 
