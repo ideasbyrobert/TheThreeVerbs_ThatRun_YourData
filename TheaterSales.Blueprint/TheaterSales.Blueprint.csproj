@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TheaterSales.DotNet\TheaterSales.DotNet.csproj" />
+    <ProjectReference Include="..\TheaterSales.Server\TheaterSales.Server.csproj" />
     <ProjectReference Include="..\TheaterSales.Extended\TheaterSales.Extended.csproj" />
   </ItemGroup>
 

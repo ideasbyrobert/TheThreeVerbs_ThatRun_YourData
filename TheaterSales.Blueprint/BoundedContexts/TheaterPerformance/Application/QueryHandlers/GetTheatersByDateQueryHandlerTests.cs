@@ -1,12 +1,12 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.EntityFrameworkCore;
-using TheaterSales.DotNet.Data;
-using TheaterSales.DotNet.Domain;
+using TheaterSales.Server.Data;
+using TheaterSales.Server.Domain;
 using TheaterSales.Extended.MapFilterReduce;
-using TheaterSales.DotNet.Infrastructure;
-using TheaterSales.DotNet.Core.SharedKernel;
-using TheaterSales.DotNet.BoundedContexts.TheaterPerformance.Application.Queries;
-using TheaterSales.DotNet.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
+using TheaterSales.Server.Infrastructure;
+using TheaterSales.Server.Core.SharedKernel;
+using TheaterSales.Server.BoundedContexts.TheaterPerformance.Application.Queries;
+using TheaterSales.Server.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
 
 namespace TheaterSales.Blueprint.BoundedContexts.TheaterPerformance.Application.QueryHandlers;
 

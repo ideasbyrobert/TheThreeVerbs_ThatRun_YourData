@@ -6,11 +6,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TheaterSales.Blueprint", "T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TheaterSales.Common", "TheaterSales.Common\TheaterSales.Common.csproj", "{9C8B4D5E-2345-5678-9012-234567890123}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TheaterSales.DotNet", "TheaterSales.DotNet\TheaterSales.DotNet.csproj", "{AD9C5E6F-3456-6789-0123-345678901234}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TheaterSales.Server", "TheaterSales.Server\TheaterSales.Server.csproj", "{AD9C5E6F-3456-6789-0123-345678901234}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TheaterSales.Extended", "TheaterSales.Extended\TheaterSales.Extended.csproj", "{BE0D6F70-4567-7890-1234-456789012345}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TheaterSales.TypeScript", "TheaterSales.TypeScript\TheaterSales.TypeScript.csproj", "{CF1E7081-5678-8901-2345-567890123456}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TheaterSales.Device", "TheaterSales.Device\TheaterSales.Device.csproj", "{CF1E7081-5678-8901-2345-567890123456}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

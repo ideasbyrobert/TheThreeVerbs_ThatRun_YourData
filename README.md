@@ -8,14 +8,14 @@ What if frontend and backend development could share the same DNA? This proof-of
 - .NET 9 SDK
 - Node.js 18+
 
-### Run .NET Examples
+### Run Server Examples
 ```bash
 dotnet test
 ```
 
-### Run TypeScript Examples
+### Run Device Examples
 ```bash
-cd TheaterSales.TypeScript
+cd TheaterSales.Device
 npm install
 npm test
 ```
@@ -24,9 +24,9 @@ npm test
 
 - **TheaterSales.Blueprint** - Reference implementations demonstrating Map-Filter-Reduce patterns in action
 - **TheaterSales.Common** - Shared database fixtures and test data
-- **TheaterSales.DotNet** - Core domain logic and query handlers using Map-Filter-Reduce operations
+- **TheaterSales.Device** - Implementation for user devices (browsers, mobile, IoT) with local resource processing
 - **TheaterSales.Extended** - The library providing multiple execution strategies (immediate, lazy, memoized, batched)
-- **TheaterSales.TypeScript** - Frontend-style implementation showing typical in-memory Map-Filter-Reduce usage
+- **TheaterSales.Server** - Backend implementation with shared resource processing
 
 ## Core Insight
 
