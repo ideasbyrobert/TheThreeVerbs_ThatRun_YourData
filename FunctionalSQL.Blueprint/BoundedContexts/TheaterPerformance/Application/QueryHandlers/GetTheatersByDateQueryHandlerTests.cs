@@ -46,80 +46,135 @@ public class GetTheatersByDateQueryHandlerTests
     }
 
     [TestMethod]
-    public void Handle_WithSpecificDate_ReturnsAllTheatersIncludingZeroRevenue()
+    public void WhenQueryingTheatersForSpecificDate_ShouldReturnAllTheatersIncludingThoseWithNoSales()
     {
-        var queryDate = new DateOnly(2024, 5, 9);
+        var dateToQuery = new DateOnly(2024, 5, 9);
+        var expectedTheatersWithRevenue = CalculateExpectedRevenueForAllTheaters(dateToQuery);
 
-        var expectedTheaters = BuildExpectedTheatersWithRevenue(queryDate);
+        var performanceResults = QueryTheatersForDate(dateToQuery);
 
-        var query = new GetTheatersByDateQuery(queryDate);
-        var results = _dispatcher
-            .Dispatch<GetTheatersByDateQuery, IEnumerable<TheaterPerformanceResult>>(query)
-            .ToList();
-
-        AssertAllTheatersAreIncluded(expectedTheaters, results);
-        AssertEachTheaterRevenueMatches(expectedTheaters, results);
+        AssertAllTheatersArePresent(expectedTheatersWithRevenue, performanceResults);
+        AssertRevenueCalculationsAreCorrect(expectedTheatersWithRevenue, performanceResults);
     }
 
-    private List<dynamic> BuildExpectedTheatersWithRevenue(DateOnly date)
+    private List<TheaterPerformanceResult> QueryTheatersForDate(DateOnly date)
     {
-        var allTheaters = _context.Theaters.ToList();
-        var salesByTheater = _context.Sales
+        var query = new GetTheatersByDateQuery(date);
+        return _dispatcher
+            .Dispatch<GetTheatersByDateQuery, IEnumerable<TheaterPerformanceResult>>(query)
+            .ToList();
+    }
+
+    private List<dynamic> CalculateExpectedRevenueForAllTheaters(DateOnly date)
+    {
+        var allTheaters = LoadAllTheaters();
+        var salesGroupedByTheater = GroupSalesByTheaterForDate(date);
+
+        return CombineTheatersWithTheirRevenue(allTheaters, salesGroupedByTheater);
+    }
+
+    private List<Theater> LoadAllTheaters()
+    {
+        return _context.Theaters.ToList();
+    }
+
+    private List<dynamic> GroupSalesByTheaterForDate(DateOnly date)
+    {
+        return _context.Sales
             .Where(s => s.SaleDate == date)
             .GroupBy(s => s.TheaterId)
             .Select(g => new { TheaterId = g.Key, TotalRevenue = g.Sum(s => s.Amount) })
-            .ToList();
+            .ToList<dynamic>();
+    }
 
-        return allTheaters
+    private List<dynamic> CombineTheatersWithTheirRevenue(
+        List<Theater> theaters,
+        List<dynamic> salesByTheater)
+    {
+        return theaters
             .Select(theater => new
             {
                 Theater = theater,
-                TotalRevenue = salesByTheater
-                    .FirstOrDefault(s => s.TheaterId == theater.Id)?.TotalRevenue ?? 0m
+                TotalRevenue = FindRevenueForTheater(theater.Id, salesByTheater)
             })
             .ToList<dynamic>();
     }
 
-    private void AssertAllTheatersAreIncluded(
-        List<dynamic> expectedTheaters,
-        List<TheaterPerformanceResult> actualResults)
+    private decimal FindRevenueForTheater(int theaterId, List<dynamic> salesByTheater)
     {
-        var allTheaters = _context.Theaters.ToList();
-        Assert.AreEqual(expectedTheaters.Count, actualResults.Count);
-        Assert.AreEqual(allTheaters.Count, actualResults.Count);
-        Assert.IsTrue(actualResults.All(t => t.TotalRevenue >= 0));
+        var theaterSales = salesByTheater.FirstOrDefault(s => s.TheaterId == theaterId);
+        return theaterSales?.TotalRevenue ?? 0m;
     }
 
-    private void AssertEachTheaterRevenueMatches(
-        List<dynamic> expectedTheaters,
-        List<TheaterPerformanceResult> actualResults)
+    private void AssertAllTheatersArePresent(
+        List<dynamic> expected,
+        List<TheaterPerformanceResult> actual)
     {
-        foreach (var actual in actualResults)
+        var totalTheatersInDatabase = CountTotalTheaters();
+        Assert.AreEqual(totalTheatersInDatabase, actual.Count,
+            "Query should return all theaters regardless of sales");
+        Assert.IsTrue(actual.All(HasNonNegativeRevenue),
+            "All theaters should have non-negative revenue");
+    }
+
+    private int CountTotalTheaters()
+    {
+        return _context.Theaters.Count();
+    }
+
+    private bool HasNonNegativeRevenue(TheaterPerformanceResult result)
+    {
+        return result.TotalRevenue >= 0;
+    }
+
+    private void AssertRevenueCalculationsAreCorrect(
+        List<dynamic> expected,
+        List<TheaterPerformanceResult> actual)
+    {
+        foreach (var actualResult in actual)
         {
-            var expected = expectedTheaters
-                .FirstOrDefault(e => e.Theater.Name == actual.Theater.Name);
-            Assert.IsNotNull(expected);
-            Assert.AreEqual(expected!.TotalRevenue, actual.TotalRevenue);
+            var expectedResult = FindMatchingTheater(expected, actualResult.Theater.Name);
+            Assert.IsNotNull(expectedResult,
+                $"Theater {actualResult.Theater.Name} should exist in expected results");
+            Assert.AreEqual(expectedResult!.TotalRevenue, actualResult.TotalRevenue,
+                $"Revenue for {actualResult.Theater.Name} should match expected");
         }
     }
 
-    [TestMethod]
-    public void Handle_WithHighSalesDate_FindsHighestRevenueTheater()
+    private dynamic? FindMatchingTheater(List<dynamic> theaters, string theaterName)
     {
-        var highSalesDate = new DateOnly(2024, 5, 10);
-
-        var expectedTopTheater = FindExpectedTopRevenueTheater(highSalesDate);
-
-        var query = new GetTheatersByDateQuery(highSalesDate);
-        var results = _dispatcher
-            .Dispatch<GetTheatersByDateQuery, IEnumerable<TheaterPerformanceResult>>(query);
-
-        var actualTopTheater = FindHighestRevenueTheaterUsingMapReduce(results);
-
-        AssertTopTheaterMatches(expectedTopTheater, actualTopTheater);
+        return theaters.FirstOrDefault(t => t.Theater.Name == theaterName);
     }
 
-    private Theater? FindExpectedTopRevenueTheater(DateOnly date)
+    [TestMethod]
+    public void WhenQueryingDateWithHighSales_ShouldIdentifyTopRevenueTheaterUsingMapReduce()
+    {
+        var dateWithHighSalesVolume = new DateOnly(2024, 5, 10);
+        var expectedTopPerformer = IdentifyTopPerformerUsingDirectQuery(dateWithHighSalesVolume);
+
+        var performanceResults = QueryTheatersForDate(dateWithHighSalesVolume);
+        var actualTopPerformer = IdentifyTopPerformerUsingMapReduce(performanceResults);
+
+        AssertTopPerformersMatch(expectedTopPerformer, actualTopPerformer);
+    }
+
+    private Theater? IdentifyTopPerformerUsingDirectQuery(DateOnly date)
+    {
+        var salesWithTheaters = JoinSalesWithTheaters(date);
+        
+        return salesWithTheaters
+            .GroupBy(x => x.Theater)
+            .Select(g => new
+            {
+                Theater = g.Key,
+                TotalRevenue = g.Sum(x => (decimal)x.Sale.Amount)
+            })
+            .OrderByDescending(x => x.TotalRevenue)
+            .FirstOrDefault()
+            ?.Theater;
+    }
+
+    private IEnumerable<dynamic> JoinSalesWithTheaters(DateOnly date)
     {
         return _context.Sales
             .Where(s => s.SaleDate == date)
@@ -127,84 +182,75 @@ public class GetTheatersByDateQueryHandlerTests
                 s => s.TheaterId,
                 t => t.Id,
                 (s, t) => new { Sale = s, Theater = t })
-            .GroupBy(x => x.Theater)
-            .Select(g => new
-            {
-                Theater = g.Key,
-                TotalRevenue = g.Sum(x => x.Sale.Amount)
-            })
-            .ToList()
-            .OrderByDescending(x => x.TotalRevenue)
-            .FirstOrDefault()
-            ?.Theater;
+            .ToList();
     }
 
-    private Theater? FindHighestRevenueTheaterUsingMapReduce(
+    private Theater? IdentifyTopPerformerUsingMapReduce(
         IEnumerable<TheaterPerformanceResult> results)
     {
         return results
             .LazyReduce(
                 (TheaterPerformanceResult?)null,
-                SelectHigherRevenueTheater,
-                HasSignificantRevenue)
+                SelectTheaterWithHigherRevenue,
+                IsSignificantPerformer)
             ?.Theater;
     }
 
-    private TheaterPerformanceResult? SelectHigherRevenueTheater(
-        TheaterPerformanceResult? current,
-        TheaterPerformanceResult next)
+    private TheaterPerformanceResult? SelectTheaterWithHigherRevenue(
+        TheaterPerformanceResult? champion,
+        TheaterPerformanceResult challenger)
     {
-        return current == null || next.TotalRevenue > current.TotalRevenue
-            ? next
-            : current;
+        if (champion == null) return challenger;
+        return challenger.TotalRevenue > champion.TotalRevenue ? challenger : champion;
     }
 
-    private bool HasSignificantRevenue(TheaterPerformanceResult? result)
+    private bool IsSignificantPerformer(TheaterPerformanceResult? result)
     {
-        return result?.TotalRevenue > 100000m;
+        const decimal significantRevenueThreshold = 100000m;
+        return result?.TotalRevenue > significantRevenueThreshold;
     }
 
-    private void AssertTopTheaterMatches(Theater? expected, Theater? actual)
+    private void AssertTopPerformersMatch(Theater? expected, Theater? actual)
     {
-        Assert.IsNotNull(actual);
-        Assert.IsNotNull(expected);
-        Assert.AreEqual(expected.Name, actual.Name);
+        Assert.IsNotNull(actual, "Should find a top performing theater");
+        Assert.IsNotNull(expected, "Expected top performer should exist");
+        Assert.AreEqual(expected.Name, actual.Name,
+            "Map-Reduce should identify the same top performer as direct query");
     }
 
     [TestMethod]
-    public void Handle_ReturnsResultsSortedByRevenueDescending()
+    public void WhenQueryingTheaters_ShouldReturnResultsOrderedByRevenueHighestToLowest()
     {
-        var highRevenueDate = new DateOnly(2024, 7, 4);
+        var independenceDayWithHighSales = new DateOnly(2024, 7, 4);
 
-        var query = new GetTheatersByDateQuery(highRevenueDate);
-        var results = _dispatcher
-            .Dispatch<GetTheatersByDateQuery, IEnumerable<TheaterPerformanceResult>>(query)
-            .ToList();
+        var performanceResults = QueryTheatersForDate(independenceDayWithHighSales);
 
-        AssertResultsAreSortedDescendingByRevenue(results);
+        AssertResultsAreInDescendingRevenueOrder(performanceResults);
     }
 
-    private void AssertResultsAreSortedDescendingByRevenue(
+    private void AssertResultsAreInDescendingRevenueOrder(
         List<TheaterPerformanceResult> results)
     {
         for (int i = 1; i < results.Count; i++)
         {
-            var previousRevenue = results[i - 1].TotalRevenue;
-            var currentRevenue = results[i].TotalRevenue;
+            var higherRankedTheater = results[i - 1];
+            var lowerRankedTheater = results[i];
 
             Assert.IsTrue(
-                previousRevenue >= currentRevenue,
-                BuildSortingErrorMessage(i, previousRevenue, currentRevenue));
+                higherRankedTheater.TotalRevenue >= lowerRankedTheater.TotalRevenue,
+                FormatOrderingViolationMessage(i, higherRankedTheater, lowerRankedTheater));
         }
     }
 
-    private string BuildSortingErrorMessage(
-        int index,
-        decimal previousRevenue,
-        decimal currentRevenue)
+    private string FormatOrderingViolationMessage(
+        int position,
+        TheaterPerformanceResult higherRanked,
+        TheaterPerformanceResult lowerRanked)
     {
-        return $"Theater at index {index - 1} has revenue {previousRevenue} " +
-               $"which should be >= theater at index {index} with revenue {currentRevenue}";
+        return $"Theater '{higherRanked.Theater.Name}' at position {position - 1} " +
+               $"with revenue {higherRanked.TotalRevenue:C} " +
+               $"should rank higher than '{lowerRanked.Theater.Name}' at position {position} " +
+               $"with revenue {lowerRanked.TotalRevenue:C}";
     }
 
 }

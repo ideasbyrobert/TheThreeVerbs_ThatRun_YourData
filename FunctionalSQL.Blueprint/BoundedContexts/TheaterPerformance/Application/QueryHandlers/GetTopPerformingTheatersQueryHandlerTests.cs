@@ -46,145 +46,204 @@ public class GetTopPerformingTheatersQueryHandlerTests
     }
 
     [TestMethod]
-    public void Handle_WithTopCount3_ReturnsTop3TheatersIncludingZeroRevenue()
+    public void WhenRequestingTop3Theaters_ShouldReturnExactly3HighestPerformersInDescendingOrder()
     {
-        var startDate = new DateOnly(2024, 5, 1);
-        var endDate = new DateOnly(2024, 5, 31);
+        var mayPerformancePeriod = CreateDateRangeForMay2024();
+        const int requestedTopCount = 3;
         
-        var expectedTopTheaters = CalculateExpectedTopTheaters(startDate, endDate, 3);
+        var expectedTopPerformers = CalculateTopPerformersUsingDirectQuery(
+            mayPerformancePeriod, requestedTopCount);
         
-        var query = new GetTopPerformingTheatersQuery(new DateRange(startDate, endDate), 3);
-        var results = _dispatcher.Dispatch<GetTopPerformingTheatersQuery, 
-            IEnumerable<TheaterPerformanceResult>>(query);
-        var topTheaters = results.ToList();
+        var actualTopPerformers = QueryTopPerformingTheaters(
+            mayPerformancePeriod, requestedTopCount);
         
-        AssertTopTheatersMatch(expectedTopTheaters, topTheaters);
-        AssertCorrectOrdering(topTheaters);
+        AssertCorrectTheatersSelected(expectedTopPerformers, actualTopPerformers);
+        AssertDescendingRevenueOrder(actualTopPerformers);
+    }
+
+    private DateRange CreateDateRangeForMay2024()
+    {
+        return new DateRange(
+            new DateOnly(2024, 5, 1),
+            new DateOnly(2024, 5, 31));
     }
     
-    private List<dynamic> CalculateExpectedTopTheaters(
-        DateOnly startDate, 
-        DateOnly endDate, 
-        int topCount)
+    private List<TheaterPerformanceResult> QueryTopPerformingTheaters(
+        DateRange period, int topCount)
     {
-        var allTheaters = _context.Theaters.ToList();
-        var salesByTheater = CalculateSalesByTheaterForPeriod(startDate, endDate);
+        var query = new GetTopPerformingTheatersQuery(period, topCount);
+        return _dispatcher
+            .Dispatch<GetTopPerformingTheatersQuery, IEnumerable<TheaterPerformanceResult>>(query)
+            .ToList();
+    }
+
+    private List<dynamic> CalculateTopPerformersUsingDirectQuery(
+        DateRange period, int topCount)
+    {
+        var allTheaters = LoadAllTheaters();
+        var salesAggregatedByTheater = AggregateSalesByTheaterForPeriod(period);
         
-        return BuildTopTheaters(allTheaters, salesByTheater, topCount);
+        return SelectTopPerformers(allTheaters, salesAggregatedByTheater, topCount);
+    }
+
+    private List<Theater> LoadAllTheaters()
+    {
+        return _context.Theaters.ToList();
     }
     
-    private List<dynamic> CalculateSalesByTheaterForPeriod(
-        DateOnly startDate, 
-        DateOnly endDate)
+    private List<dynamic> AggregateSalesByTheaterForPeriod(DateRange period)
     {
         return _context.Sales
-            .Where(s => s.SaleDate >= startDate && s.SaleDate <= endDate)
-            .GroupBy(s => s.TheaterId)
-            .Select(g => new { TheaterId = g.Key, TotalRevenue = g.Sum(s => s.Amount) })
+            .Where(sale => sale.SaleDate >= period.StartDate && sale.SaleDate <= period.EndDate)
+            .GroupBy(sale => sale.TheaterId)
+            .Select(group => new 
+            { 
+                TheaterId = group.Key, 
+                TotalRevenue = group.Sum(sale => sale.Amount) 
+            })
             .ToList<dynamic>();
     }
     
-    private List<dynamic> BuildTopTheaters(
+    private List<dynamic> SelectTopPerformers(
         List<Theater> allTheaters, 
         List<dynamic> salesByTheater, 
         int topCount)
     {
         return allTheaters
-            .Select(theater => new
-            {
-                Theater = theater,
-                TotalRevenue = GetTheaterRevenueFromSales(theater.Id, salesByTheater)
-            })
-            .OrderByDescending(x => x.TotalRevenue)
+            .Select(theater => CreateTheaterPerformance(theater, salesByTheater))
+            .OrderByDescending(performance => performance.TotalRevenue)
             .Take(topCount)
             .ToList<dynamic>();
     }
-    
-    private decimal GetTheaterRevenueFromSales(int theaterId, List<dynamic> salesByTheater)
+
+    private dynamic CreateTheaterPerformance(Theater theater, List<dynamic> salesByTheater)
     {
-        var sale = salesByTheater.FirstOrDefault(s => s.TheaterId == theaterId);
-        return sale?.TotalRevenue ?? 0m;
+        return new
+        {
+            Theater = theater,
+            TotalRevenue = FindTheaterRevenue(theater.Id, salesByTheater)
+        };
     }
     
-    private void AssertTopTheatersMatch(
+    private decimal FindTheaterRevenue(int theaterId, List<dynamic> salesByTheater)
+    {
+        var theaterSales = salesByTheater.FirstOrDefault(s => s.TheaterId == theaterId);
+        return theaterSales?.TotalRevenue ?? 0m;
+    }
+    
+    private void AssertCorrectTheatersSelected(
         List<dynamic> expected, 
         List<TheaterPerformanceResult> actual)
     {
-        Assert.AreEqual(expected.Count, actual.Count);
-        for (int i = 0; i < expected.Count; i++)
+        Assert.AreEqual(expected.Count, actual.Count,
+            "Should return exactly the requested number of top theaters");
+        
+        for (int rank = 0; rank < expected.Count; rank++)
         {
-            Assert.AreEqual(expected[i].Theater.Name, actual[i].Theater.Name);
-            Assert.AreEqual(expected[i].TotalRevenue, actual[i].TotalRevenue);
-        }
-    }
-    
-    private void AssertCorrectOrdering(List<TheaterPerformanceResult> topTheaters)
-    {
-        if (topTheaters.Count >= 2)
-        {
-            Assert.IsTrue(topTheaters[0].TotalRevenue >= topTheaters[1].TotalRevenue);
-        }
-        if (topTheaters.Count >= 3)
-        {
-            Assert.IsTrue(topTheaters[1].TotalRevenue >= topTheaters[2].TotalRevenue);
+            AssertTheaterAtRankMatches(expected[rank], actual[rank], rank + 1);
         }
     }
 
-    [TestMethod]
-    public void Handle_WithTopCount0_ReturnsEmptyCollection()
+    private void AssertTheaterAtRankMatches(
+        dynamic expected, 
+        TheaterPerformanceResult actual, 
+        int rank)
     {
-        var startDate = new DateOnly(2024, 5, 1);
-        var endDate = new DateOnly(2024, 5, 31);
-        
-        var query = new GetTopPerformingTheatersQuery(new DateRange(startDate, endDate), 0);
-        var results = _dispatcher.Dispatch<GetTopPerformingTheatersQuery, 
-            IEnumerable<TheaterPerformanceResult>>(query);
-        
-        AssertEmptyResults(results);
+        Assert.AreEqual(expected.Theater.Name, actual.Theater.Name,
+            $"Theater at rank {rank} should match expected");
+        Assert.AreEqual(expected.TotalRevenue, actual.TotalRevenue,
+            $"Revenue for theater at rank {rank} should match expected");
     }
     
-    private void AssertEmptyResults(IEnumerable<TheaterPerformanceResult> results)
+    private void AssertDescendingRevenueOrder(List<TheaterPerformanceResult> theaters)
     {
-        Assert.AreEqual(0, results.Count());
+        for (int i = 1; i < theaters.Count; i++)
+        {
+            var higherRanked = theaters[i - 1];
+            var lowerRanked = theaters[i];
+            
+            Assert.IsTrue(
+                higherRanked.TotalRevenue >= lowerRanked.TotalRevenue,
+                FormatRankingViolationMessage(i, higherRanked, lowerRanked));
+        }
+    }
+
+    private string FormatRankingViolationMessage(
+        int position,
+        TheaterPerformanceResult higherRanked,
+        TheaterPerformanceResult lowerRanked)
+    {
+        return $"Theater '{higherRanked.Theater.Name}' at rank {position} " +
+               $"with revenue {higherRanked.TotalRevenue:C} " +
+               $"should rank higher than '{lowerRanked.Theater.Name}' at rank {position + 1} " +
+               $"with revenue {lowerRanked.TotalRevenue:C}";
     }
 
     [TestMethod]
-    public void Handle_WithTopCountGreaterThanAvailable_ReturnsAllTheaters()
+    public void WhenRequestingZeroTopTheaters_ShouldReturnEmptyCollection()
     {
-        var startDate = new DateOnly(2024, 5, 1);
-        var endDate = new DateOnly(2024, 5, 31);
-        var totalTheaters = _context.Theaters.Count();
+        var mayPerformancePeriod = CreateDateRangeForMay2024();
+        const int zeroTheaters = 0;
         
-        var query = new GetTopPerformingTheatersQuery(new DateRange(startDate, endDate), 100);
-        var results = _dispatcher.Dispatch<GetTopPerformingTheatersQuery, 
-            IEnumerable<TheaterPerformanceResult>>(query);
+        var results = QueryTopPerformingTheaters(mayPerformancePeriod, zeroTheaters);
         
-        AssertAllTheatersIncluded(results, totalTheaters);
+        AssertCollectionIsEmpty(results);
     }
     
-    private void AssertAllTheatersIncluded(
+    private void AssertCollectionIsEmpty(IEnumerable<TheaterPerformanceResult> results)
+    {
+        Assert.AreEqual(0, results.Count(),
+            "Requesting zero theaters should return empty collection");
+    }
+
+    [TestMethod]
+    public void WhenRequestingMoreTheatersThanExist_ShouldReturnAllAvailableTheaters()
+    {
+        var mayPerformancePeriod = CreateDateRangeForMay2024();
+        const int unrealisticallyHighCount = 100;
+        var totalTheatersInDatabase = CountTotalTheaters();
+        
+        var results = QueryTopPerformingTheaters(mayPerformancePeriod, unrealisticallyHighCount);
+        
+        AssertReturnsExactlyAllTheaters(results, totalTheatersInDatabase);
+    }
+
+    private int CountTotalTheaters()
+    {
+        return _context.Theaters.Count();
+    }
+    
+    private void AssertReturnsExactlyAllTheaters(
         IEnumerable<TheaterPerformanceResult> results, 
         int expectedCount)
     {
-        Assert.AreEqual(expectedCount, results.Count());
+        Assert.AreEqual(expectedCount, results.Count(),
+            "Should return all theaters when requested count exceeds available");
     }
 
     [TestMethod]
-    public void Handle_WithDateRange_FiltersCorrectly()
+    public void WhenQueryingJulyPerformance_ShouldReturnTopTheatersForThatPeriodOnly()
     {
-        var startDate = new DateOnly(2024, 7, 1);
-        var endDate = new DateOnly(2024, 7, 31);
+        var julyPerformancePeriod = CreateDateRangeForJuly2024();
+        const int topFiveTheaters = 5;
         
-        var query = new GetTopPerformingTheatersQuery(new DateRange(startDate, endDate), 5);
-        var results = _dispatcher.Dispatch<GetTopPerformingTheatersQuery, 
-            IEnumerable<TheaterPerformanceResult>>(query);
+        var julyTopPerformers = QueryTopPerformingTheaters(
+            julyPerformancePeriod, topFiveTheaters);
         
-        AssertResultsExist(results);
+        AssertResultsExistForPeriod(julyTopPerformers);
+    }
+
+    private DateRange CreateDateRangeForJuly2024()
+    {
+        return new DateRange(
+            new DateOnly(2024, 7, 1),
+            new DateOnly(2024, 7, 31));
     }
     
-    private void AssertResultsExist(IEnumerable<TheaterPerformanceResult> results)
+    private void AssertResultsExistForPeriod(IEnumerable<TheaterPerformanceResult> results)
     {
-        Assert.IsTrue(results.Any());
+        Assert.IsTrue(results.Any(),
+            "Should find top performing theaters for the specified period");
     }
 
 }

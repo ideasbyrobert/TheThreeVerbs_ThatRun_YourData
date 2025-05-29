@@ -46,160 +46,225 @@ public class GetUnderperformingTheatersQueryHandlerTests
     }
 
     [TestMethod]
-    public void Handle_WithThreshold_ReturnsTheatersWithRevenueBelowOrEqualThreshold()
+    public void WhenQueryingWithRevenueThreshold_ShouldReturnOnlyTheatersPerformingAtOrBelowThreshold()
     {
-        var date = new DateOnly(2024, 5, 9);
-        var threshold = 1000m;
+        var performanceDate = new DateOnly(2024, 5, 9);
+        const decimal revenueThreshold = 1000m;
 
-        var expectedUnderperformers = CalculateExpectedUnderperformers(date, threshold);
+        var expectedUnderperformers = IdentifyUnderperformersUsingDirectQuery(
+            performanceDate, revenueThreshold);
 
+        var actualUnderperformers = QueryUnderperformingTheaters(
+            performanceDate, revenueThreshold);
+
+        AssertCorrectUnderperformersIdentified(
+            expectedUnderperformers, actualUnderperformers, revenueThreshold);
+    }
+
+    private List<TheaterPerformanceResult> QueryUnderperformingTheaters(
+        DateOnly date, decimal threshold)
+    {
         var query = new GetUnderperformingTheatersQuery(date, threshold);
-        var results = _dispatcher.Dispatch<GetUnderperformingTheatersQuery,
-            IEnumerable<TheaterPerformanceResult>>(query);
-        var underperformers = results.ToList();
-
-        AssertUnderperformersMatch(expectedUnderperformers, underperformers, threshold);
+        return _dispatcher
+            .Dispatch<GetUnderperformingTheatersQuery, IEnumerable<TheaterPerformanceResult>>(query)
+            .ToList();
     }
 
-    private List<dynamic> CalculateExpectedUnderperformers(DateOnly date, decimal threshold)
+    private List<dynamic> IdentifyUnderperformersUsingDirectQuery(
+        DateOnly date, decimal threshold)
     {
-        var allTheaters = _context.Theaters.ToList();
-        var salesByTheater = CalculateSalesByTheater(date);
+        var allTheaters = LoadAllTheaters();
+        var salesAggregatedByTheater = AggregateSalesByTheaterForDate(date);
 
-        return BuildUnderperformingTheaters(allTheaters, salesByTheater, threshold);
+        return FilterTheatersPerformingBelowThreshold(
+            allTheaters, salesAggregatedByTheater, threshold);
     }
 
-    private List<dynamic> CalculateSalesByTheater(DateOnly date)
+    private List<Theater> LoadAllTheaters()
+    {
+        return _context.Theaters.ToList();
+    }
+
+    private List<dynamic> AggregateSalesByTheaterForDate(DateOnly date)
     {
         return _context.Sales
-            .Where(s => s.SaleDate == date)
-            .GroupBy(s => s.TheaterId)
-            .Select(g => new { TheaterId = g.Key, TotalRevenue = g.Sum(s => s.Amount) })
+            .Where(sale => sale.SaleDate == date)
+            .GroupBy(sale => sale.TheaterId)
+            .Select(group => new 
+            { 
+                TheaterId = group.Key, 
+                TotalRevenue = group.Sum(sale => sale.Amount) 
+            })
             .ToList<dynamic>();
     }
 
-    private List<dynamic> BuildUnderperformingTheaters(
+    private List<dynamic> FilterTheatersPerformingBelowThreshold(
         List<Theater> allTheaters,
         List<dynamic> salesByTheater,
         decimal threshold)
     {
         return allTheaters
-            .Select(theater => new
-            {
-                Theater = theater,
-                TotalRevenue = GetTheaterRevenue(theater.Id, salesByTheater)
-            })
-            .Where(x => x.TotalRevenue <= threshold)
+            .Select(theater => CreateTheaterPerformanceRecord(theater, salesByTheater))
+            .Where(performance => IsUnderperforming(performance, threshold))
             .ToList<dynamic>();
     }
 
-    private decimal GetTheaterRevenue(int theaterId, List<dynamic> salesByTheater)
+    private dynamic CreateTheaterPerformanceRecord(
+        Theater theater, 
+        List<dynamic> salesByTheater)
     {
-        var sale = salesByTheater.FirstOrDefault(s => s.TheaterId == theaterId);
-        return sale?.TotalRevenue ?? 0m;
+        return new
+        {
+            Theater = theater,
+            TotalRevenue = CalculateTheaterRevenue(theater.Id, salesByTheater)
+        };
     }
 
-    private void AssertUnderperformersMatch(
+    private decimal CalculateTheaterRevenue(int theaterId, List<dynamic> salesByTheater)
+    {
+        var theaterSales = salesByTheater.FirstOrDefault(s => s.TheaterId == theaterId);
+        return theaterSales?.TotalRevenue ?? 0m;
+    }
+
+    private bool IsUnderperforming(dynamic performance, decimal threshold)
+    {
+        return performance.TotalRevenue <= threshold;
+    }
+
+    private void AssertCorrectUnderperformersIdentified(
         List<dynamic> expected,
         List<TheaterPerformanceResult> actual,
         decimal threshold)
     {
-        Assert.AreEqual(expected.Count, actual.Count);
-        AssertAllBelowThreshold(actual, threshold);
-        AssertEachUnderperformerMatches(expected, actual);
+        Assert.AreEqual(expected.Count, actual.Count,
+            "Should identify the same number of underperforming theaters");
+        AssertAllTheatersAreAtOrBelowThreshold(actual, threshold);
+        AssertEachIdentifiedTheaterMatchesExpected(expected, actual);
     }
 
-    private void AssertAllBelowThreshold(
+    private void AssertAllTheatersAreAtOrBelowThreshold(
         List<TheaterPerformanceResult> underperformers,
         decimal threshold)
     {
-        Assert.IsTrue(underperformers.All(t => t.TotalRevenue <= threshold));
+        foreach (var theater in underperformers)
+        {
+            Assert.IsTrue(
+                theater.TotalRevenue <= threshold,
+                FormatThresholdViolationMessage(theater, threshold));
+        }
     }
 
-    private void AssertEachUnderperformerMatches(
+    private string FormatThresholdViolationMessage(
+        TheaterPerformanceResult theater,
+        decimal threshold)
+    {
+        return $"Theater '{theater.Theater.Name}' with revenue {theater.TotalRevenue:C} " +
+               $"exceeds threshold of {threshold:C}";
+    }
+
+    private void AssertEachIdentifiedTheaterMatchesExpected(
         List<dynamic> expected,
         List<TheaterPerformanceResult> actual)
     {
-        foreach (var underperformer in actual)
+        foreach (var actualTheater in actual)
         {
-            var expectedMatch = expected.FirstOrDefault(
-                e => e.Theater.Name == underperformer.Theater.Name);
-            Assert.IsNotNull(expectedMatch);
-            Assert.AreEqual(expectedMatch!.TotalRevenue, underperformer.TotalRevenue);
+            var expectedMatch = FindMatchingTheater(expected, actualTheater.Theater.Name);
+            
+            Assert.IsNotNull(expectedMatch,
+                $"Theater '{actualTheater.Theater.Name}' should be in expected underperformers");
+            
+            Assert.AreEqual(expectedMatch!.TotalRevenue, actualTheater.TotalRevenue,
+                $"Revenue calculation for '{actualTheater.Theater.Name}' should match");
+        }
+    }
+
+    private dynamic? FindMatchingTheater(List<dynamic> theaters, string theaterName)
+    {
+        return theaters.FirstOrDefault(t => t.Theater.Name == theaterName);
+    }
+
+    [TestMethod]
+    public void WhenThresholdIsZero_ShouldReturnOnlyTheatersWithNoSalesAtAll()
+    {
+        var dateWithMinimalSalesActivity = new DateOnly(2024, 1, 15);
+        const decimal zeroRevenueThreshold = 0m;
+
+        var theatersWithNoSales = QueryUnderperformingTheaters(
+            dateWithMinimalSalesActivity, zeroRevenueThreshold);
+
+        AssertAllReturnedTheatersHaveZeroRevenue(theatersWithNoSales);
+    }
+
+    private void AssertAllReturnedTheatersHaveZeroRevenue(
+        IEnumerable<TheaterPerformanceResult> theaters)
+    {
+        foreach (var theater in theaters)
+        {
+            Assert.AreEqual(0m, theater.TotalRevenue,
+                $"Theater '{theater.Theater.Name}' should have exactly zero revenue");
         }
     }
 
     [TestMethod]
-    public void Handle_WithZeroThreshold_ReturnsOnlyTheatersWithZeroRevenue()
+    public void WhenThresholdExceedsAllPossibleRevenue_ShouldReturnEveryTheater()
     {
-        var dateWithLimitedSales = new DateOnly(2024, 1, 15);
-        var threshold = 0m;
+        var typicalBusinessDay = new DateOnly(2024, 5, 9);
+        const decimal impossiblyHighThreshold = 1000000m;
+        var totalTheatersInDatabase = CountTotalTheaters();
 
-        var query = new GetUnderperformingTheatersQuery(dateWithLimitedSales, threshold);
-        var results = _dispatcher.Dispatch<GetUnderperformingTheatersQuery,
-            IEnumerable<TheaterPerformanceResult>>(query);
+        var allTheaters = QueryUnderperformingTheaters(
+            typicalBusinessDay, impossiblyHighThreshold);
 
-        AssertAllTheatersHaveZeroRevenue(results);
+        AssertReturnsCompleteTheaterList(allTheaters, totalTheatersInDatabase);
     }
 
-    private void AssertAllTheatersHaveZeroRevenue(
-        IEnumerable<TheaterPerformanceResult> results)
+    private int CountTotalTheaters()
     {
-        Assert.IsTrue(results.All(t => t.TotalRevenue == 0m));
+        return _context.Theaters.Count();
     }
 
-    [TestMethod]
-    public void Handle_WithHighThreshold_ReturnsAllTheaters()
-    {
-        var date = new DateOnly(2024, 5, 9);
-        var veryHighThreshold = 1000000m;
-        var totalTheaters = _context.Theaters.Count();
-
-        var query = new GetUnderperformingTheatersQuery(date, veryHighThreshold);
-        var results = _dispatcher.Dispatch<GetUnderperformingTheatersQuery,
-            IEnumerable<TheaterPerformanceResult>>(query);
-
-        AssertAllTheatersReturned(results, totalTheaters);
-    }
-
-    private void AssertAllTheatersReturned(
+    private void AssertReturnsCompleteTheaterList(
         IEnumerable<TheaterPerformanceResult> results,
         int expectedCount)
     {
-        Assert.AreEqual(expectedCount, results.Count());
+        Assert.AreEqual(expectedCount, results.Count(),
+            "Very high threshold should include all theaters as underperformers");
     }
 
     [TestMethod]
-    public void Handle_ReturnsResultsSortedByRevenueDescending()
+    public void WhenReturningUnderperformers_ShouldOrderByRevenueFromHighestToLowestWithinThreshold()
     {
-        var date = new DateOnly(2024, 5, 9);
-        var threshold = 50000m;
+        var performanceDate = new DateOnly(2024, 5, 9);
+        const decimal moderateThreshold = 50000m;
 
-        var query = new GetUnderperformingTheatersQuery(date, threshold);
-        var results = _dispatcher.Dispatch<GetUnderperformingTheatersQuery,
-            IEnumerable<TheaterPerformanceResult>>(query);
-        var underperformers = results.ToList();
+        var underperformingTheaters = QueryUnderperformingTheaters(
+            performanceDate, moderateThreshold);
 
-        AssertResultsSortedByRevenueDescending(underperformers);
+        AssertUnderperformersAreInDescendingRevenueOrder(underperformingTheaters);
     }
 
-    private void AssertResultsSortedByRevenueDescending(
+    private void AssertUnderperformersAreInDescendingRevenueOrder(
         List<TheaterPerformanceResult> underperformers)
     {
-        if (underperformers.Count > 1)
+        for (int i = 1; i < underperformers.Count; i++)
         {
-            for (int i = 1; i < underperformers.Count; i++)
-            {
-                var previousRevenue = underperformers[i - 1].TotalRevenue;
-                var currentRevenue = underperformers[i].TotalRevenue;
-                AssertDescendingOrder(previousRevenue, currentRevenue);
-            }
+            var betterPerformer = underperformers[i - 1];
+            var worsePerformer = underperformers[i];
+            
+            Assert.IsTrue(
+                betterPerformer.TotalRevenue >= worsePerformer.TotalRevenue,
+                FormatOrderingViolationMessage(i, betterPerformer, worsePerformer));
         }
     }
 
-    private void AssertDescendingOrder(decimal previousRevenue, decimal currentRevenue)
+    private string FormatOrderingViolationMessage(
+        int position,
+        TheaterPerformanceResult betterPerformer,
+        TheaterPerformanceResult worsePerformer)
     {
-        Assert.IsTrue(previousRevenue >= currentRevenue,
-            $"Results should be sorted descending by revenue");
+        return $"Theater '{betterPerformer.Theater.Name}' at position {position - 1} " +
+               $"with revenue {betterPerformer.TotalRevenue:C} " +
+               $"should be listed before '{worsePerformer.Theater.Name}' at position {position} " +
+               $"with revenue {worsePerformer.TotalRevenue:C}";
     }
 }
