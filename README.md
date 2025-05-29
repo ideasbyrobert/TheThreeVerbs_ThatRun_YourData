@@ -15,18 +15,18 @@ dotnet test
 
 ### Run Device Examples
 ```bash
-cd FunctionalSQL.Device
+cd TrinitySQL.Device
 npm install
 npm test
 ```
 
 ## Project Structure
 
-- **FunctionalSQL.Blueprint** - Reference implementations demonstrating Map-Filter-Reduce patterns in action
-- **FunctionalSQL.Common** - Shared database fixtures and test data
-- **FunctionalSQL.Device** - Implementation for user devices (browsers, mobile, IoT) with local resource processing
-- **FunctionalSQL.Strategy** - The library providing multiple execution strategies (immediate, lazy, memoized, batched)
-- **FunctionalSQL.Server** - Backend implementation with shared resource processing
+- **TrinitySQL.Blueprint** - Reference implementations demonstrating Map-Filter-Reduce patterns in action
+- **TrinitySQL.Common** - Shared database fixtures and test data
+- **TrinitySQL.Device** - Implementation for user devices (browsers, mobile, IoT) with local resource processing
+- **TrinitySQL.Strategy** - The library providing multiple execution strategies (immediate, lazy, memoized, batched)
+- **TrinitySQL.Server** - Backend implementation with shared resource processing
 
 ## Core Insight
 
