@@ -62,6 +62,98 @@ export class TheaterSalesContext
 
 }
 
+class SqlFileLocator
+{
+  private readonly markerFileName: string
+  private readonly searchStrategies: SearchStrategy[]
+  
+  constructor(markerFileName: string, searchStrategies: SearchStrategy[])
+  {
+    this.markerFileName = markerFileName
+    this.searchStrategies = searchStrategies
+  }
+
+  findSqlDirectory(): string
+  {
+    const searchPaths = this.collectSearchPaths()
+    const foundPath = this.findFirstValidPath(searchPaths)
+    
+    if (!foundPath)
+    {
+      throw new SqlFilesNotFoundError(searchPaths)
+    }
+    
+    return foundPath
+  }
+
+  private collectSearchPaths(): string[]
+  {
+    return this.searchStrategies.map(strategy => strategy.getPath())
+  }
+
+  private findFirstValidPath(paths: string[]): string | undefined
+  {
+    return paths.find(path => this.containsSqlFile(path))
+  }
+
+  private containsSqlFile(directory: string): boolean
+  {
+    const filePath = path.join(directory, this.markerFileName)
+    return fs.existsSync(filePath)
+  }
+}
+
+interface SearchStrategy
+{
+  getPath(): string
+}
+
+class CurrentDirectoryStrategy implements SearchStrategy
+{
+  getPath(): string
+  {
+    return __dirname
+  }
+}
+
+class RelativePathStrategy implements SearchStrategy
+{
+  private readonly relativePath: string
+
+  constructor(relativePath: string)
+  {
+    this.relativePath = relativePath
+  }
+
+  getPath(): string
+  {
+    return path.join(__dirname, ...this.relativePath.split('/'))
+  }
+}
+
+class WorkingDirectoryStrategy implements SearchStrategy
+{
+  private readonly subPath: string
+
+  constructor(subPath: string)
+  {
+    this.subPath = subPath
+  }
+
+  getPath(): string
+  {
+    return path.join(process.cwd(), this.subPath)
+  }
+}
+
+class SqlFilesNotFoundError extends Error
+{
+  constructor(searchedPaths: string[])
+  {
+    super(`Could not find SQL files. Searched in: ${searchedPaths.join(', ')}`)
+  }
+}
+
 export class DatabaseInitializer
 {
   private static FileNames = class
@@ -108,7 +200,18 @@ export class DatabaseInitializer
 
   private getBaseDirectory(): string
   {
-    const isInTestOrSourceDirectory = __dirname.includes('test') || __dirname.includes('src')
-    return isInTestOrSourceDirectory ? path.join(__dirname, '..', 'dist') : __dirname
+    const searchStrategies = [
+      new CurrentDirectoryStrategy(),
+      new RelativePathStrategy('../dist'),
+      new RelativePathStrategy('../../../TrinitySQL.Context'),
+      new WorkingDirectoryStrategy('TrinitySQL.Context')
+    ]
+    
+    const sqlFileLocator = new SqlFileLocator(
+      DatabaseInitializer.FileNames.Schema, 
+      searchStrategies
+    )
+    
+    return sqlFileLocator.findSqlDirectory()
   }
 }

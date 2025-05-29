@@ -1,84 +1,62 @@
-import {DatabaseInitializer, TheaterSalesContext} from '@device/Data'
 import {SalesRepository} from '@device/Repository'
 import {TopPerformingTheatersService} from '@device/Services'
-import * as fs from 'fs'
-import * as path from 'path'
-import {randomUUID} from 'crypto'
+import {ServiceTestBase, TestDates} from '../TestInfrastructure'
 
 describe('TopPerformingTheatersTests', () =>
 {
-  let dbPath: string
-  let connectionString: string
-  let initializer: DatabaseInitializer
-  let context: TheaterSalesContext
-  let service: TopPerformingTheatersService
-
-  beforeEach(() =>
+  const testSetup = new class extends ServiceTestBase
   {
-    dbPath = path.join(require('os').tmpdir(), `theater_sales_test_${randomUUID()}.db`)
-    connectionString = dbPath
-
-    initializer = new DatabaseInitializer(connectionString)
-    initializer.Initialize()
-    initializer.SeedData()
-
-    context = new TheaterSalesContext(connectionString)
-    const repository = new SalesRepository(context)
-    service = new TopPerformingTheatersService(repository)
-  })
-
-  afterEach(() =>
-  {
-    context.close()
-    if (fs.existsSync(dbPath))
+    service: TopPerformingTheatersService = null!
+    
+    protected initializeTest(): void
     {
-      fs.unlinkSync(dbPath)
+      const repository = new SalesRepository(this.context)
+      this.service = new TopPerformingTheatersService(repository)
     }
-  })
+  }()
+  
+  beforeEach(() => testSetup.setupTest())
+  afterEach(() => testSetup.teardownTest())
 
   test('GetHighestSalesTheater_OnPeakSummerDay_ReturnsMultiplex', () =>
   {
-    const peakSummerDay = '2024-07-04'
-    const result = service.getHighestSalesTheater(peakSummerDay)
+    const result = testSetup.service.getHighestSalesTheater(TestDates.IndependenceDay2024)
 
     expect(result).not.toBeNull()
     expect(result!.name).toBe('Multiplex 20')
 
-    const aggregates = service.getTheaterSalesByDate(peakSummerDay)
+    const aggregates = testSetup.service.getTheaterSalesByDate(TestDates.IndependenceDay2024)
     const multiplex = aggregates.find(a => a.theater.name === 'Multiplex 20')
     expect(multiplex!.totalSales).toBe(22900)
   })
 
   test('GetHighestSalesTheater_OnHolidaySeason_ReturnsMultiplex', () =>
   {
-    const christmasDay = '2024-12-25'
-    const result = service.getHighestSalesTheater(christmasDay)
+    const result = testSetup.service.getHighestSalesTheater(TestDates.Christmas2024)
 
     expect(result).not.toBeNull()
     expect(result!.name).toBe('Multiplex 20')
 
-    const aggregates = service.getTheaterSalesByDate(christmasDay)
+    const aggregates = testSetup.service.getTheaterSalesByDate(TestDates.Christmas2024)
     const multiplex = aggregates.find(a => a.theater.name === 'Multiplex 20')
     expect(multiplex!.totalSales).toBe(12800)
   })
 
   test('GetHighestSalesTheater_OnRegularDay_ReturnsExpectedTheater', () =>
   {
-    const regularDay = '2024-03-15'
-    const result = service.getHighestSalesTheater(regularDay)
+    const result = testSetup.service.getHighestSalesTheater(TestDates.RegularSpringDay2024)
 
     expect(result).not.toBeNull()
     expect(result!.name).toBe('Multiplex 20')
 
-    const aggregates = service.getTheaterSalesByDate(regularDay)
+    const aggregates = testSetup.service.getTheaterSalesByDate(TestDates.RegularSpringDay2024)
     const multiplex = aggregates.find(a => a.theater.name === 'Multiplex 20')
     expect(multiplex!.totalSales).toBe(18100)
   })
 
   test('GetTopPerformingTheaters_ReturnsTheatersInDescendingOrder', () =>
   {
-    const date = '2024-06-15'
-    const results = service.getTheaterSalesByDate(date)
+    const results = testSetup.service.getTheaterSalesByDate(TestDates.SummerDay2024)
 
     expect(results.length).toBeGreaterThan(0)
 
@@ -97,8 +75,7 @@ describe('TopPerformingTheatersTests', () =>
 
   test('IdentifyUnderperformingTheaters_FindsTheatersWithZeroSales', () =>
   {
-    const date = '2024-05-09'
-    const underperformingTheaters = service.getUnderperformingTheaters(date, 0)
+    const underperformingTheaters = testSetup.service.getUnderperformingTheaters(TestDates.ZeroSalesDay, 0)
 
     expect(underperformingTheaters).toHaveLength(6)
     expect(underperformingTheaters.some(t => t.theater.name === 'Drive-In Classic')).toBe(true)
