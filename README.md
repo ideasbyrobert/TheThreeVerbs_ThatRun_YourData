@@ -10,14 +10,14 @@ What if frontend and backend development could share the same DNA? This proof-of
 
 ### Run Tests
 ```bash
-# Run all tests (both .NET and TypeScript)
+# Run all tests
 dotnet test
 
-# Run only .NET tests
-dotnet test --filter "TestCategory!=TypeScript"
+# Run Server tests only
+dotnet test --filter "TestCategory!=Device"
 
-# Run only TypeScript tests  
-dotnet test --filter "TestCategory=TypeScript"
+# Run Device tests only
+dotnet test --filter "TestCategory=Device"
 ```
 
 ## Project Structure

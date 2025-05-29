@@ -9,7 +9,7 @@ public class DeviceTypeScriptTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
-    [TestCategory("TypeScript")]
+    [TestCategory("Device")]
     public void RunTypeScriptTests()
     {
         var testEnvironment = new TypeScriptTestEnvironment(TestContext);
