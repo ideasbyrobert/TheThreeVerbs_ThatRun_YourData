@@ -6,7 +6,7 @@ using TrinitySQL.Server.Infrastructure;
 using TrinitySQL.Server.Core.SharedKernel;
 using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Application.Queries;
 using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
-using TrinitySQL.Blueprint.BaselineQueries;
+using TrinitySQL.Blueprint.Server.BaselineQueries;
 
 namespace TrinitySQL.Blueprint.Server.BoundedContexts.TheaterPerformance.Application.QueryHandlers;
 

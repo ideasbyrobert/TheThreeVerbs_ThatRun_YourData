@@ -1,21 +1,27 @@
 using TrinitySQL.Server.Data;
 using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
 
-namespace TrinitySQL.Blueprint.BaselineQueries;
+namespace TrinitySQL.Blueprint.Server.BaselineQueries;
 
-public class UnderperformingTheatersQuery
+public class TopPerformingTheatersQuery
 {
     private readonly TheaterSalesContext _context;
 
-    public UnderperformingTheatersQuery(TheaterSalesContext context)
+    public TopPerformingTheatersQuery(TheaterSalesContext context)
     {
         _context = context;
     }
 
-    public List<TheaterPerformanceResult> Execute(DateOnly date, decimal revenueThreshold)
+    public List<TheaterPerformanceResult> Execute(DateRange dateRange, int topCount)
     {
-        var salesByTheater = _context.Sales
-            .Where(sale => sale.SaleDate == date)
+        if (topCount == 0)
+        {
+            return new List<TheaterPerformanceResult>();
+        }
+
+        var salesInRange = _context.Sales
+            .Where(sale => sale.SaleDate >= dateRange.StartDate &&
+                          sale.SaleDate <= dateRange.EndDate)
             .GroupBy(sale => sale.TheaterId)
             .Select(group => new
             {
@@ -29,13 +35,13 @@ public class UnderperformingTheatersQuery
         var results = allTheaters
             .Select(theater =>
             {
-                var revenue = salesByTheater
+                var revenue = salesInRange
                     .FirstOrDefault(s => s.TheaterId == theater.Id)?.TotalRevenue ?? 0m;
 
                 return new TheaterPerformanceResult(theater, revenue);
             })
-            .Where(result => result.TotalRevenue <= revenueThreshold)
             .OrderByDescending(result => result.TotalRevenue)
+            .Take(topCount)
             .ToList();
 
         return results;

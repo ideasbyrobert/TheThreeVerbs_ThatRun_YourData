@@ -1,7 +1,7 @@
 using TrinitySQL.Server.Data;
 using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
 
-namespace TrinitySQL.Blueprint.BaselineQueries;
+namespace TrinitySQL.Blueprint.Server.BaselineQueries;
 
 public class TheatersByDateQuery
 {
