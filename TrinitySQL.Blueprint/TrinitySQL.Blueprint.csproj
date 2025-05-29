@@ -18,7 +18,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TrinitySQL.Server\TrinitySQL.Server.csproj" />
-    <ProjectReference Include="..\TrinitySQL.Core\TrinitySQL.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,9 +25,11 @@
   </ItemGroup>
 
   <Target Name="EnsureNpmDependencies" BeforeTargets="Build" Condition="Exists('Device/package.json')">
+    <Message Text="Installing npm dependencies for Device tests..." Importance="high" />
     <Exec Command="npm install" 
           WorkingDirectory="Device"
           Condition="!Exists('Device/node_modules')" />
   </Target>
+  
 
 </Project>

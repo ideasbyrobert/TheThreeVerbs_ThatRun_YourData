@@ -15,10 +15,35 @@ public class TypeScriptTestRunner
 
     public TestExecutionResult Execute()
     {
+        EnsureDependenciesInstalled();
+        
         var outputCollector = new TestOutputCollector();
         var process = CreateTestProcess();
         
         return ExecuteProcess(process, outputCollector);
+    }
+    
+    private void EnsureDependenciesInstalled()
+    {
+        var nodeModulesPath = Path.Combine(workingDirectory, "node_modules");
+        if (!Directory.Exists(nodeModulesPath))
+        {
+            InstallDependencies();
+        }
+    }
+    
+    private void InstallDependencies()
+    {
+        var processFactory = new TestProcessFactory(processExecutor.GetCommand());
+        var installProcess = processFactory.CreateProcess("install", workingDirectory);
+        
+        installProcess.Start();
+        installProcess.WaitForExit();
+        
+        if (installProcess.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"Failed to install npm dependencies. Exit code: {installProcess.ExitCode}");
+        }
     }
 
     private Process CreateTestProcess()
