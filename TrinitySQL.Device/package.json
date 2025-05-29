@@ -4,10 +4,9 @@
   "description": "Device implementation of TrinitySQL",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && node copy-sql-files.js",
+    "build": "tsc",
     "test": "jest",
-    "test:blueprint": "cd ../TrinitySQL.Blueprint/Device && jest",
-    "postinstall": "node copy-sql-files.js"
+    "test:blueprint": "cd ../TrinitySQL.Blueprint/Device && jest"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.8",

@@ -30,6 +30,8 @@ public class TypeScriptTestRunner
         {
             InstallDependencies();
         }
+        
+        EnsureDeviceDependenciesInstalled();
     }
     
     private void InstallDependencies()
@@ -67,5 +69,30 @@ public class TypeScriptTestRunner
             outputCollector.GetOutput(),
             outputCollector.HasFailures()
         );
+    }
+    
+    private void EnsureDeviceDependenciesInstalled()
+    {
+        var devicePath = Path.GetFullPath(Path.Combine(workingDirectory, "..", "..", "TrinitySQL.Device"));
+        var deviceNodeModulesPath = Path.Combine(devicePath, "node_modules");
+        
+        if (!Directory.Exists(deviceNodeModulesPath))
+        {
+            InstallDeviceDependencies(devicePath);
+        }
+    }
+    
+    private void InstallDeviceDependencies(string devicePath)
+    {
+        var processFactory = new TestProcessFactory(processExecutor.GetCommand());
+        var installProcess = processFactory.CreateProcess("install", devicePath);
+        
+        installProcess.Start();
+        installProcess.WaitForExit();
+        
+        if (installProcess.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"Failed to install TrinitySQL.Device dependencies. Exit code: {installProcess.ExitCode}");
+        }
     }
 }

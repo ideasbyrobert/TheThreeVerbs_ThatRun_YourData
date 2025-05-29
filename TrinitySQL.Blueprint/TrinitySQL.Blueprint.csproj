@@ -24,11 +24,42 @@
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
 
-  <Target Name="EnsureNpmDependencies" BeforeTargets="Build" Condition="Exists('Device/package.json')">
-    <Message Text="Installing npm dependencies for Device tests..." Importance="high" />
+  <Target Name="EnsureNpmDependencies" BeforeTargets="Build">
+    <!-- Install Blueprint Device test dependencies -->
+    <Message Text="Installing npm dependencies for Device tests..." Importance="high" 
+             Condition="Exists('Device/package.json') And !Exists('Device/node_modules')" />
     <Exec Command="npm install" 
           WorkingDirectory="Device"
-          Condition="!Exists('Device/node_modules')" />
+          Condition="Exists('Device/package.json') And !Exists('Device/node_modules')" />
+    
+    <!-- Install TrinitySQL.Device dependencies (needed for imports) -->
+    <Message Text="Installing npm dependencies for TrinitySQL.Device..." Importance="high" 
+             Condition="!Exists('../TrinitySQL.Device/node_modules')" />
+    <Exec Command="npm install" 
+          WorkingDirectory="../TrinitySQL.Device"
+          Condition="!Exists('../TrinitySQL.Device/node_modules')" />
+  </Target>
+
+  <Target Name="CopySqlFilesToDevice" AfterTargets="EnsureNpmDependencies">
+    <!-- Copy SQL files to TrinitySQL.Device/dist -->
+    <MakeDir Directories="../TrinitySQL.Device/dist" Condition="!Exists('../TrinitySQL.Device/dist')" />
+    <Copy SourceFiles="../TrinitySQL.Context/schema.sql;../TrinitySQL.Context/test_fixtures.sql"
+          DestinationFolder="../TrinitySQL.Device/dist"
+          SkipUnchangedFiles="true" />
+    <Message Text="Copied SQL files to TrinitySQL.Device/dist" Importance="normal" />
+    
+    <!-- Copy SQL files to Blueprint Device tests -->
+    <MakeDir Directories="Device/dist" Condition="!Exists('Device/dist')" />
+    <Copy SourceFiles="../TrinitySQL.Context/schema.sql;../TrinitySQL.Context/test_fixtures.sql"
+          DestinationFolder="Device/dist"
+          SkipUnchangedFiles="true" />
+    <Message Text="Copied SQL files to Blueprint/Device/dist" Importance="normal" />
+  </Target>
+
+  <Target Name="CleanupDeviceTestArtifacts" AfterTargets="VSTest">
+    <!-- Clean up Device test artifacts after tests complete -->
+    <RemoveDir Directories="Device/dist" Condition="Exists('Device/dist')" />
+    <Message Text="Cleaned up Device test artifacts" Importance="normal" />
   </Target>
   
 
