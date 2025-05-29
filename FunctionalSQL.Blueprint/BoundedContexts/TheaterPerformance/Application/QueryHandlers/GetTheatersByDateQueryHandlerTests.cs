@@ -7,6 +7,7 @@ using FunctionalSQL.Server.Infrastructure;
 using FunctionalSQL.Server.Core.SharedKernel;
 using FunctionalSQL.Server.BoundedContexts.TheaterPerformance.Application.Queries;
 using FunctionalSQL.Server.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
+using FunctionalSQL.Blueprint.BaselineQueries;
 
 namespace FunctionalSQL.Blueprint.BoundedContexts.TheaterPerformance.Application.QueryHandlers;
 
@@ -49,12 +50,12 @@ public class GetTheatersByDateQueryHandlerTests
     public void WhenQueryingTheatersForSpecificDate_ShouldReturnAllTheatersIncludingThoseWithNoSales()
     {
         var dateToQuery = new DateOnly(2024, 5, 9);
-        var expectedTheatersWithRevenue = CalculateExpectedRevenueForAllTheaters(dateToQuery);
+        var baselineQuery = new TheatersByDateQuery(_context);
+        var expectedResults = baselineQuery.Execute(dateToQuery);
 
         var performanceResults = QueryTheatersForDate(dateToQuery);
 
-        AssertAllTheatersArePresent(expectedTheatersWithRevenue, performanceResults);
-        AssertRevenueCalculationsAreCorrect(expectedTheatersWithRevenue, performanceResults);
+        AssertResultsMatchBaseline(expectedResults, performanceResults);
     }
 
     private List<TheaterPerformanceResult> QueryTheatersForDate(DateOnly date)
@@ -65,124 +66,34 @@ public class GetTheatersByDateQueryHandlerTests
             .ToList();
     }
 
-    private List<dynamic> CalculateExpectedRevenueForAllTheaters(DateOnly date)
-    {
-        var allTheaters = LoadAllTheaters();
-        var salesGroupedByTheater = GroupSalesByTheaterForDate(date);
-
-        return CombineTheatersWithTheirRevenue(allTheaters, salesGroupedByTheater);
-    }
-
-    private List<Theater> LoadAllTheaters()
-    {
-        return _context.Theaters.ToList();
-    }
-
-    private List<dynamic> GroupSalesByTheaterForDate(DateOnly date)
-    {
-        return _context.Sales
-            .Where(s => s.SaleDate == date)
-            .GroupBy(s => s.TheaterId)
-            .Select(g => new { TheaterId = g.Key, TotalRevenue = g.Sum(s => s.Amount) })
-            .ToList<dynamic>();
-    }
-
-    private List<dynamic> CombineTheatersWithTheirRevenue(
-        List<Theater> theaters,
-        List<dynamic> salesByTheater)
-    {
-        return theaters
-            .Select(theater => new
-            {
-                Theater = theater,
-                TotalRevenue = FindRevenueForTheater(theater.Id, salesByTheater)
-            })
-            .ToList<dynamic>();
-    }
-
-    private decimal FindRevenueForTheater(int theaterId, List<dynamic> salesByTheater)
-    {
-        var theaterSales = salesByTheater.FirstOrDefault(s => s.TheaterId == theaterId);
-        return theaterSales?.TotalRevenue ?? 0m;
-    }
-
-    private void AssertAllTheatersArePresent(
-        List<dynamic> expected,
+    private void AssertResultsMatchBaseline(
+        List<TheaterPerformanceResult> baseline,
         List<TheaterPerformanceResult> actual)
     {
-        var totalTheatersInDatabase = CountTotalTheaters();
-        Assert.AreEqual(totalTheatersInDatabase, actual.Count,
-            "Query should return all theaters regardless of sales");
-        Assert.IsTrue(actual.All(HasNonNegativeRevenue),
-            "All theaters should have non-negative revenue");
-    }
-
-    private int CountTotalTheaters()
-    {
-        return _context.Theaters.Count();
-    }
-
-    private bool HasNonNegativeRevenue(TheaterPerformanceResult result)
-    {
-        return result.TotalRevenue >= 0;
-    }
-
-    private void AssertRevenueCalculationsAreCorrect(
-        List<dynamic> expected,
-        List<TheaterPerformanceResult> actual)
-    {
-        foreach (var actualResult in actual)
+        Assert.AreEqual(baseline.Count, actual.Count,
+            "Should return same number of theaters as baseline");
+        
+        for (int i = 0; i < baseline.Count; i++)
         {
-            var expectedResult = FindMatchingTheater(expected, actualResult.Theater.Name);
-            Assert.IsNotNull(expectedResult,
-                $"Theater {actualResult.Theater.Name} should exist in expected results");
-            Assert.AreEqual(expectedResult!.TotalRevenue, actualResult.TotalRevenue,
-                $"Revenue for {actualResult.Theater.Name} should match expected");
+            Assert.AreEqual(baseline[i].Theater.Name, actual[i].Theater.Name,
+                $"Theater at position {i} should match baseline");
+            Assert.AreEqual(baseline[i].TotalRevenue, actual[i].TotalRevenue,
+                $"Revenue for {baseline[i].Theater.Name} should match baseline");
         }
-    }
-
-    private dynamic? FindMatchingTheater(List<dynamic> theaters, string theaterName)
-    {
-        return theaters.FirstOrDefault(t => t.Theater.Name == theaterName);
     }
 
     [TestMethod]
     public void WhenQueryingDateWithHighSales_ShouldIdentifyTopRevenueTheaterUsingMapReduce()
     {
         var dateWithHighSalesVolume = new DateOnly(2024, 5, 10);
-        var expectedTopPerformer = IdentifyTopPerformerUsingDirectQuery(dateWithHighSalesVolume);
+        var baselineQuery = new TheatersByDateQuery(_context);
+        var baselineResults = baselineQuery.Execute(dateWithHighSalesVolume);
+        var expectedTopPerformer = baselineResults.FirstOrDefault()?.Theater;
 
         var performanceResults = QueryTheatersForDate(dateWithHighSalesVolume);
         var actualTopPerformer = IdentifyTopPerformerUsingMapReduce(performanceResults);
 
         AssertTopPerformersMatch(expectedTopPerformer, actualTopPerformer);
-    }
-
-    private Theater? IdentifyTopPerformerUsingDirectQuery(DateOnly date)
-    {
-        var salesWithTheaters = JoinSalesWithTheaters(date);
-        
-        return salesWithTheaters
-            .GroupBy(x => x.Theater)
-            .Select(g => new
-            {
-                Theater = g.Key,
-                TotalRevenue = g.Sum(x => (decimal)x.Sale.Amount)
-            })
-            .OrderByDescending(x => x.TotalRevenue)
-            .FirstOrDefault()
-            ?.Theater;
-    }
-
-    private IEnumerable<dynamic> JoinSalesWithTheaters(DateOnly date)
-    {
-        return _context.Sales
-            .Where(s => s.SaleDate == date)
-            .Join(_context.Theaters,
-                s => s.TheaterId,
-                t => t.Id,
-                (s, t) => new { Sale = s, Theater = t })
-            .ToList();
     }
 
     private Theater? IdentifyTopPerformerUsingMapReduce(
@@ -222,10 +133,13 @@ public class GetTheatersByDateQueryHandlerTests
     public void WhenQueryingTheaters_ShouldReturnResultsOrderedByRevenueHighestToLowest()
     {
         var independenceDayWithHighSales = new DateOnly(2024, 7, 4);
+        var baselineQuery = new TheatersByDateQuery(_context);
+        var baselineResults = baselineQuery.Execute(independenceDayWithHighSales);
 
         var performanceResults = QueryTheatersForDate(independenceDayWithHighSales);
 
         AssertResultsAreInDescendingRevenueOrder(performanceResults);
+        AssertOrderMatchesBaseline(baselineResults, performanceResults);
     }
 
     private void AssertResultsAreInDescendingRevenueOrder(
@@ -251,6 +165,17 @@ public class GetTheatersByDateQueryHandlerTests
                $"with revenue {higherRanked.TotalRevenue:C} " +
                $"should rank higher than '{lowerRanked.Theater.Name}' at position {position} " +
                $"with revenue {lowerRanked.TotalRevenue:C}";
+    }
+
+    private void AssertOrderMatchesBaseline(
+        List<TheaterPerformanceResult> baseline,
+        List<TheaterPerformanceResult> actual)
+    {
+        for (int i = 0; i < Math.Min(baseline.Count, actual.Count); i++)
+        {
+            Assert.AreEqual(baseline[i].Theater.Name, actual[i].Theater.Name,
+                $"Theater at position {i} should match baseline order");
+        }
     }
 
 }

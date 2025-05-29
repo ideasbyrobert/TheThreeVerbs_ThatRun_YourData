@@ -7,6 +7,7 @@ using FunctionalSQL.Server.Infrastructure;
 using FunctionalSQL.Server.Core.SharedKernel;
 using FunctionalSQL.Server.BoundedContexts.TheaterPerformance.Application.Queries;
 using FunctionalSQL.Server.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
+using FunctionalSQL.Blueprint.BaselineQueries;
 
 namespace FunctionalSQL.Blueprint.BoundedContexts.TheaterPerformance.Application.QueryHandlers;
 
@@ -51,13 +52,13 @@ public class GetTopPerformingTheatersQueryHandlerTests
         var mayPerformancePeriod = CreateDateRangeForMay2024();
         const int requestedTopCount = 3;
         
-        var expectedTopPerformers = CalculateTopPerformersUsingDirectQuery(
-            mayPerformancePeriod, requestedTopCount);
+        var baselineQuery = new TopPerformingTheatersQuery(_context);
+        var expectedTopPerformers = baselineQuery.Execute(mayPerformancePeriod, requestedTopCount);
         
         var actualTopPerformers = QueryTopPerformingTheaters(
             mayPerformancePeriod, requestedTopCount);
         
-        AssertCorrectTheatersSelected(expectedTopPerformers, actualTopPerformers);
+        AssertResultsMatchBaseline(expectedTopPerformers, actualTopPerformers);
         AssertDescendingRevenueOrder(actualTopPerformers);
     }
 
@@ -77,82 +78,20 @@ public class GetTopPerformingTheatersQueryHandlerTests
             .ToList();
     }
 
-    private List<dynamic> CalculateTopPerformersUsingDirectQuery(
-        DateRange period, int topCount)
-    {
-        var allTheaters = LoadAllTheaters();
-        var salesAggregatedByTheater = AggregateSalesByTheaterForPeriod(period);
-        
-        return SelectTopPerformers(allTheaters, salesAggregatedByTheater, topCount);
-    }
-
-    private List<Theater> LoadAllTheaters()
-    {
-        return _context.Theaters.ToList();
-    }
-    
-    private List<dynamic> AggregateSalesByTheaterForPeriod(DateRange period)
-    {
-        return _context.Sales
-            .Where(sale => sale.SaleDate >= period.StartDate && sale.SaleDate <= period.EndDate)
-            .GroupBy(sale => sale.TheaterId)
-            .Select(group => new 
-            { 
-                TheaterId = group.Key, 
-                TotalRevenue = group.Sum(sale => sale.Amount) 
-            })
-            .ToList<dynamic>();
-    }
-    
-    private List<dynamic> SelectTopPerformers(
-        List<Theater> allTheaters, 
-        List<dynamic> salesByTheater, 
-        int topCount)
-    {
-        return allTheaters
-            .Select(theater => CreateTheaterPerformance(theater, salesByTheater))
-            .OrderByDescending(performance => performance.TotalRevenue)
-            .Take(topCount)
-            .ToList<dynamic>();
-    }
-
-    private dynamic CreateTheaterPerformance(Theater theater, List<dynamic> salesByTheater)
-    {
-        return new
-        {
-            Theater = theater,
-            TotalRevenue = FindTheaterRevenue(theater.Id, salesByTheater)
-        };
-    }
-    
-    private decimal FindTheaterRevenue(int theaterId, List<dynamic> salesByTheater)
-    {
-        var theaterSales = salesByTheater.FirstOrDefault(s => s.TheaterId == theaterId);
-        return theaterSales?.TotalRevenue ?? 0m;
-    }
-    
-    private void AssertCorrectTheatersSelected(
-        List<dynamic> expected, 
+    private void AssertResultsMatchBaseline(
+        List<TheaterPerformanceResult> baseline, 
         List<TheaterPerformanceResult> actual)
     {
-        Assert.AreEqual(expected.Count, actual.Count,
+        Assert.AreEqual(baseline.Count, actual.Count,
             "Should return exactly the requested number of top theaters");
         
-        for (int rank = 0; rank < expected.Count; rank++)
+        for (int rank = 0; rank < baseline.Count; rank++)
         {
-            AssertTheaterAtRankMatches(expected[rank], actual[rank], rank + 1);
+            Assert.AreEqual(baseline[rank].Theater.Name, actual[rank].Theater.Name,
+                $"Theater at rank {rank + 1} should match baseline");
+            Assert.AreEqual(baseline[rank].TotalRevenue, actual[rank].TotalRevenue,
+                $"Revenue for theater at rank {rank + 1} should match baseline");
         }
-    }
-
-    private void AssertTheaterAtRankMatches(
-        dynamic expected, 
-        TheaterPerformanceResult actual, 
-        int rank)
-    {
-        Assert.AreEqual(expected.Theater.Name, actual.Theater.Name,
-            $"Theater at rank {rank} should match expected");
-        Assert.AreEqual(expected.TotalRevenue, actual.TotalRevenue,
-            $"Revenue for theater at rank {rank} should match expected");
     }
     
     private void AssertDescendingRevenueOrder(List<TheaterPerformanceResult> theaters)
@@ -185,9 +124,12 @@ public class GetTopPerformingTheatersQueryHandlerTests
         var mayPerformancePeriod = CreateDateRangeForMay2024();
         const int zeroTheaters = 0;
         
-        var results = QueryTopPerformingTheaters(mayPerformancePeriod, zeroTheaters);
+        var baselineQuery = new TopPerformingTheatersQuery(_context);
+        var baselineResults = baselineQuery.Execute(mayPerformancePeriod, zeroTheaters);
+        var actualResults = QueryTopPerformingTheaters(mayPerformancePeriod, zeroTheaters);
         
-        AssertCollectionIsEmpty(results);
+        AssertCollectionIsEmpty(actualResults);
+        Assert.AreEqual(baselineResults.Count, actualResults.Count);
     }
     
     private void AssertCollectionIsEmpty(IEnumerable<TheaterPerformanceResult> results)
@@ -201,16 +143,12 @@ public class GetTopPerformingTheatersQueryHandlerTests
     {
         var mayPerformancePeriod = CreateDateRangeForMay2024();
         const int unrealisticallyHighCount = 100;
-        var totalTheatersInDatabase = CountTotalTheaters();
         
-        var results = QueryTopPerformingTheaters(mayPerformancePeriod, unrealisticallyHighCount);
+        var baselineQuery = new TopPerformingTheatersQuery(_context);
+        var baselineResults = baselineQuery.Execute(mayPerformancePeriod, unrealisticallyHighCount);
+        var actualResults = QueryTopPerformingTheaters(mayPerformancePeriod, unrealisticallyHighCount);
         
-        AssertReturnsExactlyAllTheaters(results, totalTheatersInDatabase);
-    }
-
-    private int CountTotalTheaters()
-    {
-        return _context.Theaters.Count();
+        AssertResultsMatchBaseline(baselineResults, actualResults);
     }
     
     private void AssertReturnsExactlyAllTheaters(
@@ -227,10 +165,12 @@ public class GetTopPerformingTheatersQueryHandlerTests
         var julyPerformancePeriod = CreateDateRangeForJuly2024();
         const int topFiveTheaters = 5;
         
-        var julyTopPerformers = QueryTopPerformingTheaters(
-            julyPerformancePeriod, topFiveTheaters);
+        var baselineQuery = new TopPerformingTheatersQuery(_context);
+        var baselineResults = baselineQuery.Execute(julyPerformancePeriod, topFiveTheaters);
+        var actualResults = QueryTopPerformingTheaters(julyPerformancePeriod, topFiveTheaters);
         
-        AssertResultsExistForPeriod(julyTopPerformers);
+        AssertResultsExistForPeriod(actualResults);
+        AssertResultsMatchBaseline(baselineResults, actualResults);
     }
 
     private DateRange CreateDateRangeForJuly2024()

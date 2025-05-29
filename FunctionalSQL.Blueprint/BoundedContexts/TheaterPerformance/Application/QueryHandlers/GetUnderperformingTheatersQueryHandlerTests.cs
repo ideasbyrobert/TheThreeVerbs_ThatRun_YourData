@@ -7,6 +7,7 @@ using FunctionalSQL.Server.Infrastructure;
 using FunctionalSQL.Server.Core.SharedKernel;
 using FunctionalSQL.Server.BoundedContexts.TheaterPerformance.Application.Queries;
 using FunctionalSQL.Server.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
+using FunctionalSQL.Blueprint.BaselineQueries;
 
 namespace FunctionalSQL.Blueprint.BoundedContexts.TheaterPerformance.Application.QueryHandlers;
 
@@ -51,14 +52,13 @@ public class GetUnderperformingTheatersQueryHandlerTests
         var performanceDate = new DateOnly(2024, 5, 9);
         const decimal revenueThreshold = 1000m;
 
-        var expectedUnderperformers = IdentifyUnderperformersUsingDirectQuery(
-            performanceDate, revenueThreshold);
+        var baselineQuery = new UnderperformingTheatersQuery(_context);
+        var expectedUnderperformers = baselineQuery.Execute(performanceDate, revenueThreshold);
 
         var actualUnderperformers = QueryUnderperformingTheaters(
             performanceDate, revenueThreshold);
 
-        AssertCorrectUnderperformersIdentified(
-            expectedUnderperformers, actualUnderperformers, revenueThreshold);
+        AssertResultsMatchBaseline(expectedUnderperformers, actualUnderperformers, revenueThreshold);
     }
 
     private List<TheaterPerformanceResult> QueryUnderperformingTheaters(
@@ -70,76 +70,15 @@ public class GetUnderperformingTheatersQueryHandlerTests
             .ToList();
     }
 
-    private List<dynamic> IdentifyUnderperformersUsingDirectQuery(
-        DateOnly date, decimal threshold)
-    {
-        var allTheaters = LoadAllTheaters();
-        var salesAggregatedByTheater = AggregateSalesByTheaterForDate(date);
-
-        return FilterTheatersPerformingBelowThreshold(
-            allTheaters, salesAggregatedByTheater, threshold);
-    }
-
-    private List<Theater> LoadAllTheaters()
-    {
-        return _context.Theaters.ToList();
-    }
-
-    private List<dynamic> AggregateSalesByTheaterForDate(DateOnly date)
-    {
-        return _context.Sales
-            .Where(sale => sale.SaleDate == date)
-            .GroupBy(sale => sale.TheaterId)
-            .Select(group => new 
-            { 
-                TheaterId = group.Key, 
-                TotalRevenue = group.Sum(sale => sale.Amount) 
-            })
-            .ToList<dynamic>();
-    }
-
-    private List<dynamic> FilterTheatersPerformingBelowThreshold(
-        List<Theater> allTheaters,
-        List<dynamic> salesByTheater,
-        decimal threshold)
-    {
-        return allTheaters
-            .Select(theater => CreateTheaterPerformanceRecord(theater, salesByTheater))
-            .Where(performance => IsUnderperforming(performance, threshold))
-            .ToList<dynamic>();
-    }
-
-    private dynamic CreateTheaterPerformanceRecord(
-        Theater theater, 
-        List<dynamic> salesByTheater)
-    {
-        return new
-        {
-            Theater = theater,
-            TotalRevenue = CalculateTheaterRevenue(theater.Id, salesByTheater)
-        };
-    }
-
-    private decimal CalculateTheaterRevenue(int theaterId, List<dynamic> salesByTheater)
-    {
-        var theaterSales = salesByTheater.FirstOrDefault(s => s.TheaterId == theaterId);
-        return theaterSales?.TotalRevenue ?? 0m;
-    }
-
-    private bool IsUnderperforming(dynamic performance, decimal threshold)
-    {
-        return performance.TotalRevenue <= threshold;
-    }
-
-    private void AssertCorrectUnderperformersIdentified(
-        List<dynamic> expected,
+    private void AssertResultsMatchBaseline(
+        List<TheaterPerformanceResult> baseline,
         List<TheaterPerformanceResult> actual,
         decimal threshold)
     {
-        Assert.AreEqual(expected.Count, actual.Count,
-            "Should identify the same number of underperforming theaters");
+        Assert.AreEqual(baseline.Count, actual.Count,
+            "Should identify the same number of underperforming theaters as baseline");
         AssertAllTheatersAreAtOrBelowThreshold(actual, threshold);
-        AssertEachIdentifiedTheaterMatchesExpected(expected, actual);
+        AssertEachTheaterMatchesBaseline(baseline, actual);
     }
 
     private void AssertAllTheatersAreAtOrBelowThreshold(
@@ -162,25 +101,20 @@ public class GetUnderperformingTheatersQueryHandlerTests
                $"exceeds threshold of {threshold:C}";
     }
 
-    private void AssertEachIdentifiedTheaterMatchesExpected(
-        List<dynamic> expected,
+    private void AssertEachTheaterMatchesBaseline(
+        List<TheaterPerformanceResult> baseline,
         List<TheaterPerformanceResult> actual)
     {
-        foreach (var actualTheater in actual)
+        for (int i = 0; i < actual.Count; i++)
         {
-            var expectedMatch = FindMatchingTheater(expected, actualTheater.Theater.Name);
+            var baselineTheater = baseline.FirstOrDefault(b => b.Theater.Name == actual[i].Theater.Name);
             
-            Assert.IsNotNull(expectedMatch,
-                $"Theater '{actualTheater.Theater.Name}' should be in expected underperformers");
+            Assert.IsNotNull(baselineTheater,
+                $"Theater '{actual[i].Theater.Name}' should be in baseline underperformers");
             
-            Assert.AreEqual(expectedMatch!.TotalRevenue, actualTheater.TotalRevenue,
-                $"Revenue calculation for '{actualTheater.Theater.Name}' should match");
+            Assert.AreEqual(baselineTheater!.TotalRevenue, actual[i].TotalRevenue,
+                $"Revenue calculation for '{actual[i].Theater.Name}' should match baseline");
         }
-    }
-
-    private dynamic? FindMatchingTheater(List<dynamic> theaters, string theaterName)
-    {
-        return theaters.FirstOrDefault(t => t.Theater.Name == theaterName);
     }
 
     [TestMethod]
@@ -189,10 +123,13 @@ public class GetUnderperformingTheatersQueryHandlerTests
         var dateWithMinimalSalesActivity = new DateOnly(2024, 1, 15);
         const decimal zeroRevenueThreshold = 0m;
 
-        var theatersWithNoSales = QueryUnderperformingTheaters(
+        var baselineQuery = new UnderperformingTheatersQuery(_context);
+        var baselineResults = baselineQuery.Execute(dateWithMinimalSalesActivity, zeroRevenueThreshold);
+        var actualResults = QueryUnderperformingTheaters(
             dateWithMinimalSalesActivity, zeroRevenueThreshold);
 
-        AssertAllReturnedTheatersHaveZeroRevenue(theatersWithNoSales);
+        AssertAllReturnedTheatersHaveZeroRevenue(actualResults);
+        Assert.AreEqual(baselineResults.Count, actualResults.Count);
     }
 
     private void AssertAllReturnedTheatersHaveZeroRevenue(
@@ -210,17 +147,13 @@ public class GetUnderperformingTheatersQueryHandlerTests
     {
         var typicalBusinessDay = new DateOnly(2024, 5, 9);
         const decimal impossiblyHighThreshold = 1000000m;
-        var totalTheatersInDatabase = CountTotalTheaters();
 
-        var allTheaters = QueryUnderperformingTheaters(
+        var baselineQuery = new UnderperformingTheatersQuery(_context);
+        var baselineResults = baselineQuery.Execute(typicalBusinessDay, impossiblyHighThreshold);
+        var actualResults = QueryUnderperformingTheaters(
             typicalBusinessDay, impossiblyHighThreshold);
 
-        AssertReturnsCompleteTheaterList(allTheaters, totalTheatersInDatabase);
-    }
-
-    private int CountTotalTheaters()
-    {
-        return _context.Theaters.Count();
+        AssertResultsMatchBaseline(baselineResults, actualResults, impossiblyHighThreshold);
     }
 
     private void AssertReturnsCompleteTheaterList(
@@ -237,10 +170,13 @@ public class GetUnderperformingTheatersQueryHandlerTests
         var performanceDate = new DateOnly(2024, 5, 9);
         const decimal moderateThreshold = 50000m;
 
-        var underperformingTheaters = QueryUnderperformingTheaters(
+        var baselineQuery = new UnderperformingTheatersQuery(_context);
+        var baselineResults = baselineQuery.Execute(performanceDate, moderateThreshold);
+        var actualResults = QueryUnderperformingTheaters(
             performanceDate, moderateThreshold);
 
-        AssertUnderperformersAreInDescendingRevenueOrder(underperformingTheaters);
+        AssertUnderperformersAreInDescendingRevenueOrder(actualResults);
+        AssertResultsMatchBaseline(baselineResults, actualResults, moderateThreshold);
     }
 
     private void AssertUnderperformersAreInDescendingRevenueOrder(
