@@ -150,14 +150,6 @@ public class GetTopPerformingTheatersQueryHandlerTests
         
         AssertResultsMatchBaseline(baselineResults, actualResults);
     }
-    
-    private void AssertReturnsExactlyAllTheaters(
-        IEnumerable<TheaterPerformanceResult> results, 
-        int expectedCount)
-    {
-        Assert.AreEqual(expectedCount, results.Count(),
-            "Should return all theaters when requested count exceeds available");
-    }
 
     [TestMethod]
     public void WhenQueryingJulyPerformance_ShouldReturnTopTheatersForThatPeriodOnly()

@@ -156,14 +156,6 @@ public class GetUnderperformingTheatersQueryHandlerTests
         AssertResultsMatchBaseline(baselineResults, actualResults, impossiblyHighThreshold);
     }
 
-    private void AssertReturnsCompleteTheaterList(
-        IEnumerable<TheaterPerformanceResult> results,
-        int expectedCount)
-    {
-        Assert.AreEqual(expectedCount, results.Count(),
-            "Very high threshold should include all theaters as underperformers");
-    }
-
     [TestMethod]
     public void WhenReturningUnderperformers_ShouldOrderByRevenueFromHighestToLowestWithinThreshold()
     {
