@@ -484,18 +484,19 @@ $RECYCLE.BIN/
 *.swp
 
 # TypeScript/JavaScript
-TheaterSales.TypeScript/dist/
-TheaterSales.TypeScript/coverage/
-TheaterSales.TypeScript/src/*.sql
+TrinitySQL.Device/dist/
+TrinitySQL.Device/coverage/
+TrinitySQL.Device/src/*.sql
 
 # .NET copied SQL files
-TheaterSales.DotNet/src/*.sql
+TrinitySQL.Server/src/*.sql
 
 # SQLite test databases
 *.db
+!TrinitySQL.Common/test_database.db
 
-# Copied SQL files (except in TheaterSales.Sql)
+# Copied SQL files (except in TrinitySQL.Common)
 **/schema.sql
 **/seed_data.sql
-!TheaterSales.Sql/schema.sql
-!TheaterSales.Sql/seed_data.sql
+**/test_fixtures.sql
+!TrinitySQL.Common/*.sql
