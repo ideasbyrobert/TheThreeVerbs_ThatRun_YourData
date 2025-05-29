@@ -1,7 +1,7 @@
 using TrinitySQL.Server.Core.SharedKernel;
 using TrinitySQL.Server.Data;
 using TrinitySQL.Server.Domain;
-using TrinitySQL.Strategy.MapFilterReduce;
+using TrinitySQL.Core.MapFilterReduce;
 using TrinitySQL.Server.Infrastructure.EventBus;
 using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Application.Queries;
 using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Domain.ValueObjects;

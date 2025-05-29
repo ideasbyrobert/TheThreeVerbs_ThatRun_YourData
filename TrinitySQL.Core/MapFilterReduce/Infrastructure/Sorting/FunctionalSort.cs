@@ -1,4 +1,4 @@
-namespace TrinitySQL.Strategy.MapFilterReduce.Infrastructure.Sorting;
+namespace TrinitySQL.Core.MapFilterReduce.Infrastructure.Sorting;
 
 public static class FunctionalSort
 {

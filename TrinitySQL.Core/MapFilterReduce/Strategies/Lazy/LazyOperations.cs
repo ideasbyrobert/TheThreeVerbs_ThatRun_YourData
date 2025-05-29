@@ -1,4 +1,4 @@
-namespace TrinitySQL.Strategy.MapFilterReduce.Strategies.Lazy;
+namespace TrinitySQL.Core.MapFilterReduce.Strategies.Lazy;
 
 public static class LazyOperations
 {

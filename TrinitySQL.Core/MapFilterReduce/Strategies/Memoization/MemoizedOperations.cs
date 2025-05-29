@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace TrinitySQL.Strategy.MapFilterReduce.Strategies.Memoization;
+namespace TrinitySQL.Core.MapFilterReduce.Strategies.Memoization;
 
 public static class MemoizedOperations
 {

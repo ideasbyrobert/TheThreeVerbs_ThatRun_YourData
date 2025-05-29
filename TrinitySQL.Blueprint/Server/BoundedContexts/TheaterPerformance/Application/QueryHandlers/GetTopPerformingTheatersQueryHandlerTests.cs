@@ -2,7 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.EntityFrameworkCore;
 using TrinitySQL.Server.Data;
 using TrinitySQL.Server.Domain;
-using TrinitySQL.Strategy.MapFilterReduce;
+using TrinitySQL.Core.MapFilterReduce;
 using TrinitySQL.Server.Infrastructure;
 using TrinitySQL.Server.Core.SharedKernel;
 using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Application.Queries;

@@ -1,4 +1,4 @@
-namespace TrinitySQL.Strategy.MapFilterReduce.Strategies.Composite;
+namespace TrinitySQL.Core.MapFilterReduce.Strategies.Composite;
 
 public static class CompositeOperations
 {

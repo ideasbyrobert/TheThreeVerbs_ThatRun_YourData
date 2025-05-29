@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TrinitySQL.Strategy\TrinitySQL.Strategy.csproj" />
+    <ProjectReference Include="..\TrinitySQL.Core\TrinitySQL.Core.csproj" />
   </ItemGroup>
 
 </Project>

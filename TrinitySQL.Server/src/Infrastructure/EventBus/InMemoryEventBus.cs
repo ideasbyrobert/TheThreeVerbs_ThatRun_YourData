@@ -1,5 +1,5 @@
 using TrinitySQL.Server.Core.SharedKernel;
-using TrinitySQL.Strategy.MapFilterReduce;
+using TrinitySQL.Core.MapFilterReduce;
 
 namespace TrinitySQL.Server.Infrastructure.EventBus;
 

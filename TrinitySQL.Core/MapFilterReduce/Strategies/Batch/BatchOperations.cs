@@ -1,4 +1,4 @@
-namespace TrinitySQL.Strategy.MapFilterReduce.Strategies.Batch;
+namespace TrinitySQL.Core.MapFilterReduce.Strategies.Batch;
 
 public static class BatchOperations
 {

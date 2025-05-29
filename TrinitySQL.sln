@@ -8,7 +8,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinitySQL.Context", "Trini
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinitySQL.Server", "TrinitySQL.Server\TrinitySQL.Server.csproj", "{AD9C5E6F-3456-6789-0123-345678901234}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinitySQL.Strategy", "TrinitySQL.Strategy\TrinitySQL.Strategy.csproj", "{BE0D6F70-4567-7890-1234-456789012345}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinitySQL.Core", "TrinitySQL.Core\TrinitySQL.Core.csproj", "{BE0D6F70-4567-7890-1234-456789012345}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinitySQL.Device", "TrinitySQL.Device\TrinitySQL.Device.csproj", "{CF1E7081-5678-8901-2345-567890123456}"
 EndProject

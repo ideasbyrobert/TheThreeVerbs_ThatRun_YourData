@@ -1,4 +1,4 @@
-namespace TrinitySQL.Strategy.MapFilterReduce.Strategies.Basic;
+namespace TrinitySQL.Core.MapFilterReduce.Strategies.Basic;
 
 public static class BasicOperations
 {

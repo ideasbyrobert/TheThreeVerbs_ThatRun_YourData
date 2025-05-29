@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace TrinitySQL.Strategy.MapFilterReduce.Strategies.Basic;
+namespace TrinitySQL.Core.MapFilterReduce.Strategies.Basic;
 
 public static class QueryableMapFilterReduce
 {

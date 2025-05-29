@@ -1,11 +1,11 @@
-using TrinitySQL.Strategy.MapFilterReduce.Strategies.Basic;
-using TrinitySQL.Strategy.MapFilterReduce.Strategies.Lazy;
-using TrinitySQL.Strategy.MapFilterReduce.Strategies.Memoization;
-using TrinitySQL.Strategy.MapFilterReduce.Strategies.Batch;
-using TrinitySQL.Strategy.MapFilterReduce.Strategies.Composite;
-using TrinitySQL.Strategy.MapFilterReduce.Infrastructure.Sorting;
+using TrinitySQL.Core.MapFilterReduce.Strategies.Basic;
+using TrinitySQL.Core.MapFilterReduce.Strategies.Lazy;
+using TrinitySQL.Core.MapFilterReduce.Strategies.Memoization;
+using TrinitySQL.Core.MapFilterReduce.Strategies.Batch;
+using TrinitySQL.Core.MapFilterReduce.Strategies.Composite;
+using TrinitySQL.Core.MapFilterReduce.Infrastructure.Sorting;
 
-namespace TrinitySQL.Strategy.MapFilterReduce;
+namespace TrinitySQL.Core.MapFilterReduce;
 
 public static class MapFilterReduceExtensions
 {
