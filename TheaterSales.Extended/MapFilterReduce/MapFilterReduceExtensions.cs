@@ -5,31 +5,25 @@ using TheaterSales.Extended.MapFilterReduce.Strategies.Batch;
 using TheaterSales.Extended.MapFilterReduce.Strategies.Composite;
 using TheaterSales.Extended.MapFilterReduce.Infrastructure.Sorting;
 
-namespace TheaterSales.Extended;
+namespace TheaterSales.Extended.MapFilterReduce;
 
 public static class MapFilterReduceExtensions
 {
-    #region Core Map-Filter-Reduce Operations
-
     public static IEnumerable<TResult> Map<TSource, TResult>(
         this IEnumerable<TSource> source,
         Func<TSource, TResult> transformation) =>
-        MapOperation.Map(source, transformation);
+        BasicOperations.Map(source, transformation);
 
     public static IEnumerable<T> Filter<T>(
         this IEnumerable<T> source,
         Func<T, bool> condition) =>
-        FilterOperation.Filter(source, condition);
+        BasicOperations.Filter(source, condition);
 
     public static TAccumulate Reduce<TSource, TAccumulate>(
         this IEnumerable<TSource> source,
         TAccumulate initialValue,
         Func<TAccumulate, TSource, TAccumulate> combiner) =>
-        ReduceOperation.Reduce(source, initialValue, combiner);
-
-    #endregion
-
-    #region Queryable Map-Filter-Reduce Operations
+        BasicOperations.Reduce(source, initialValue, combiner);
 
     public static IQueryable<TResult> Map<TSource, TResult>(
         this IQueryable<TSource> source,
@@ -47,101 +41,79 @@ public static class MapFilterReduceExtensions
         Func<TAccumulate, TSource, TAccumulate> combiner) =>
         QueryableMapFilterReduce.Reduce(source, initialValue, combiner);
 
-    #endregion
-
-    #region Lazy Evaluation Strategy
-
     public static IEnumerable<TResult> LazyMap<TSource, TResult>(
         this IEnumerable<TSource> source,
         Func<TSource, TResult> transformation) =>
-        LazyTransformations.LazyMap(source, transformation);
+        LazyOperations.Map(source, transformation);
 
     public static IEnumerable<T> LazyFilter<T>(
         this IEnumerable<T> source,
         Func<T, bool> condition) =>
-        LazyTransformations.LazyFilter(source, condition);
+        LazyOperations.Filter(source, condition);
 
     public static TAccumulate LazyReduce<TSource, TAccumulate>(
         this IEnumerable<TSource> source,
         TAccumulate initialValue,
         Func<TAccumulate, TSource, TAccumulate> combiner,
         Func<TAccumulate, bool>? shouldTerminateEarly = null) =>
-        LazyTransformations.LazyReduce(source, initialValue, combiner, shouldTerminateEarly);
-
-    #endregion
-
-    #region Memoization Strategy
+        LazyOperations.Reduce(source, initialValue, combiner, shouldTerminateEarly);
 
     public static IEnumerable<TResult> MemoMap<TSource, TResult>(
         this IEnumerable<TSource> source,
         Func<TSource, TResult> transformation,
         Func<TSource, object>? cacheKeyGenerator = null) =>
-        MemoizedTransformations.MemoMap(source, transformation, cacheKeyGenerator);
+        MemoizedOperations.Map(source, transformation, cacheKeyGenerator);
 
     public static IEnumerable<T> MemoFilter<T>(
         this IEnumerable<T> source,
         Func<T, bool> condition,
         Func<T, object>? cacheKeyGenerator = null) =>
-        MemoizedTransformations.MemoFilter(source, condition, cacheKeyGenerator);
+        MemoizedOperations.Filter(source, condition, cacheKeyGenerator);
 
     public static TAccumulate MemoReduce<TSource, TAccumulate>(
         this IEnumerable<TSource> source,
         TAccumulate initialValue,
         Func<TAccumulate, TSource, TAccumulate> combiner,
         object? cacheIdentifier = null) =>
-        MemoizedTransformations.MemoReduce(source, initialValue, combiner, cacheIdentifier);
+        MemoizedOperations.Reduce(source, initialValue, combiner, cacheIdentifier);
 
     public static void ClearComputationCache() =>
-        MemoizedTransformations.ClearComputationCache();
-
-    #endregion
-
-    #region Batch Processing Strategy
+        MemoizedOperations.ClearCache();
 
     public static IEnumerable<TResult> BatchMap<TSource, TResult>(
         this IEnumerable<TSource> source,
         Func<TSource, TResult> transformation,
         int batchSize = 100) =>
-        BatchTransformations.BatchMap(source, transformation, batchSize);
+        BatchOperations.Map(source, transformation, batchSize);
 
     public static IEnumerable<T> BatchFilter<T>(
         this IEnumerable<T> source,
         Func<T, bool> condition,
         int batchSize = 100) =>
-        BatchTransformations.BatchFilter(source, condition, batchSize);
+        BatchOperations.Filter(source, condition, batchSize);
 
     public static TAccumulate BatchReduce<TSource, TAccumulate>(
         this IEnumerable<TSource> source,
         TAccumulate initialValue,
         Func<TAccumulate, TSource, TAccumulate> combiner,
         int batchSize = 100) =>
-        BatchTransformations.BatchReduce(source, initialValue, combiner, batchSize);
-
-    #endregion
-
-    #region Composite Strategies
+        BatchOperations.Reduce(source, initialValue, combiner, batchSize);
 
     public static IEnumerable<TResult> LazyBatchMap<TSource, TResult>(
         this IEnumerable<TSource> source,
         Func<TSource, TResult> transformation,
         int batchSize = 100) =>
-        CompositeTransformations.LazyBatchMap(source, transformation, batchSize);
+        CompositeOperations.LazyBatchMap(source, transformation, batchSize);
 
     public static IEnumerable<T> MemoLazyFilter<T>(
         this IEnumerable<T> source,
         Func<T, bool> condition,
         Func<T, object>? cacheKeyGenerator = null) =>
-        CompositeTransformations.MemoLazyFilter(source, condition, cacheKeyGenerator);
-
-    #endregion
-
-    #region Sorting Using Map-Filter-Reduce
+        CompositeOperations.MemoLazyFilter(source, condition, cacheKeyGenerator);
 
     public static List<T> SortBy<T, TKey>(
         this IEnumerable<T> source,
         Func<T, TKey> keyExtractor,
         bool descendingOrder = false) where TKey : IComparable<TKey> =>
         FunctionalSort.SortBy(source, keyExtractor, descendingOrder);
-
-    #endregion
 }

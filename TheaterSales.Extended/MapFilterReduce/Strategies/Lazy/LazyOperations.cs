@@ -1,25 +1,30 @@
-using TheaterSales.Extended.MapFilterReduce.Infrastructure.Iterators;
-
 namespace TheaterSales.Extended.MapFilterReduce.Strategies.Lazy;
 
-public static class LazyTransformations
+public static class LazyOperations
 {
-    public static IEnumerable<TResult> LazyMap<TSource, TResult>(
-        this IEnumerable<TSource> source,
+    public static IEnumerable<TResult> Map<TSource, TResult>(
+        IEnumerable<TSource> source,
         Func<TSource, TResult> transformation)
     {
-        return new TransformationIterator<TSource, TResult>(source, transformation);
+        foreach (var item in source)
+        {
+            yield return transformation(item);
+        }
     }
 
-    public static IEnumerable<T> LazyFilter<T>(
-        this IEnumerable<T> source,
+    public static IEnumerable<T> Filter<T>(
+        IEnumerable<T> source,
         Func<T, bool> condition)
     {
-        return new FilterIterator<T>(source, condition);
+        foreach (var item in source)
+        {
+            if (condition(item))
+                yield return item;
+        }
     }
 
-    public static TAccumulate LazyReduce<TSource, TAccumulate>(
-        this IEnumerable<TSource> source,
+    public static TAccumulate Reduce<TSource, TAccumulate>(
+        IEnumerable<TSource> source,
         TAccumulate initialValue,
         Func<TAccumulate, TSource, TAccumulate> combiner,
         Func<TAccumulate, bool>? shouldTerminateEarly = null)

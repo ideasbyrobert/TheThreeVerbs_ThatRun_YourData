@@ -2,7 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.EntityFrameworkCore;
 using TheaterSales.DotNet.Data;
 using TheaterSales.DotNet.Domain;
-using TheaterSales.Extended;
+using TheaterSales.Extended.MapFilterReduce;
 using TheaterSales.DotNet.Infrastructure;
 using TheaterSales.DotNet.Tests.TestInfrastructure;
 using TheaterSales.DotNet.BoundedContexts.TheaterPerformance.Application.Queries;

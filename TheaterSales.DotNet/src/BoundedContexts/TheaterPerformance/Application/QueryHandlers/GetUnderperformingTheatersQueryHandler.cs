@@ -1,7 +1,7 @@
 using TheaterSales.DotNet.Core.SharedKernel;
 using TheaterSales.DotNet.Data;
 using TheaterSales.DotNet.Domain;
-using TheaterSales.Extended;
+using TheaterSales.Extended.MapFilterReduce;
 using TheaterSales.DotNet.Infrastructure.EventBus;
 using TheaterSales.DotNet.BoundedContexts.TheaterPerformance.Application.Queries;
 using TheaterSales.DotNet.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
@@ -22,19 +22,22 @@ public class GetUnderperformingTheatersQueryHandler : IQueryHandler<GetUnderperf
 
     public IEnumerable<TheaterPerformanceResult> Handle(GetUnderperformingTheatersQuery query)
     {
-        var results = _context.Theaters
-            .Reduce(new List<Theater>(), (acc, t) => { acc.Add(t); return acc; })
-            .LazyMap(theater => new TheaterSalesAggregate(
-                theater,
-                _context.Sales
-                    .Filter(sale => sale.SaleDate == query.Date)
-                    .Filter(sale => sale.TheaterId == theater.Id)
-                    .Reduce(0m, (sum, sale) => sum + sale.Amount)))
+        var theaters = _context.Theaters.ToList();
+        var sales = _context.Sales.ToList();
+
+        var salesOnDate = sales
+            .Filter(sale => sale.SaleDate == query.Date);
+
+        var results = theaters
             .MemoMap(
-                aggregate => aggregate,
-                aggregate => (aggregate.Theater.Id, query.Date))
+                theater => new TheaterSalesAggregate(
+                    theater,
+                    salesOnDate
+                        .Filter(sale => sale.TheaterId == theater.Id)
+                        .Reduce(0m, (sum, sale) => sum + sale.Amount)),
+                theater => (theater.Id, query.Date))
+            .Filter(aggregate => aggregate.TotalSales <= query.Threshold)
             .SortBy(aggregate => aggregate.TotalSales, descendingOrder: true)
-            .LazyFilter(aggregate => aggregate.TotalSales <= query.Threshold)
             .Map(aggregate => TheaterPerformanceResult.FromAggregate(aggregate, query.Date))
             .Reduce(new List<TheaterPerformanceResult>(), (acc, result) => 
             { 

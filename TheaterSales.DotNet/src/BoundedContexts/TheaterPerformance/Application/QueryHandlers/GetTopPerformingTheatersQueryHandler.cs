@@ -1,7 +1,7 @@
 using TheaterSales.DotNet.Core.SharedKernel;
 using TheaterSales.DotNet.Data;
 using TheaterSales.DotNet.Domain;
-using TheaterSales.Extended;
+using TheaterSales.Extended.MapFilterReduce;
 using TheaterSales.DotNet.Infrastructure.EventBus;
 using TheaterSales.DotNet.BoundedContexts.TheaterPerformance.Application.Queries;
 using TheaterSales.DotNet.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
@@ -22,31 +22,27 @@ public class GetTopPerformingTheatersQueryHandler : IQueryHandler<GetTopPerformi
 
     public IEnumerable<TheaterPerformanceResult> Handle(GetTopPerformingTheatersQuery query)
     {
-        var results = _context.Theaters
-            .Reduce(new List<Theater>(), (acc, t) => { acc.Add(t); return acc; })
-            .LazyMap(theater => new TheaterSalesAggregate(
+        var theaters = _context.Theaters.ToList();
+        var sales = _context.Sales.ToList();
+
+        var salesInDateRange = sales
+            .Filter(sale => sale.SaleDate >= query.DateRange.StartDate && sale.SaleDate <= query.DateRange.EndDate);
+
+        var results = theaters
+            .Map(theater => new TheaterSalesAggregate(
                 theater,
-                _context.Sales
-                    .Filter(sale => sale.SaleDate >= query.DateRange.StartDate && sale.SaleDate <= query.DateRange.EndDate)
-                    .Filter(s => s.TheaterId == theater.Id)
+                salesInDateRange
+                    .Filter(sale => sale.TheaterId == theater.Id)
                     .Reduce(0m, (sum, sale) => sum + sale.Amount)))
             .SortBy(aggregate => aggregate.TotalSales, descendingOrder: true)
-            .LazyReduce((new List<TheaterSalesAggregate>(), 0), (acc, item) =>
-            {
-                if (acc.Item2 < query.TopCount)
+            .Reduce(
+                new List<TheaterPerformanceResult>(),
+                (acc, aggregate) =>
                 {
-                    acc.Item1.Add(item);
-                    return (acc.Item1, acc.Item2 + 1);
-                }
-                return acc;
-            },
-            acc => acc.Item2 >= query.TopCount).Item1
-            .Map(aggregate => TheaterPerformanceResult.FromAggregate(aggregate))
-            .Reduce(new List<TheaterPerformanceResult>(), (acc, result) => 
-            { 
-                acc.Add(result); 
-                return acc; 
-            });
+                    if (acc.Count < query.TopCount)
+                        acc.Add(TheaterPerformanceResult.FromAggregate(aggregate));
+                    return acc;
+                });
 
         _eventBus.Publish(new TopTheatersQueriedEvent(
             query.DateRange.StartDate,

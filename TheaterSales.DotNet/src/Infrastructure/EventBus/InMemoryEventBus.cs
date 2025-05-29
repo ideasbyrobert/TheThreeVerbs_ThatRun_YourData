@@ -1,5 +1,5 @@
 using TheaterSales.DotNet.Core.SharedKernel;
-using TheaterSales.Extended;
+using TheaterSales.Extended.MapFilterReduce;
 
 namespace TheaterSales.DotNet.Infrastructure.EventBus;
 
