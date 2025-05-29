@@ -8,16 +8,16 @@ What if frontend and backend development could share the same DNA? This proof-of
 - .NET 9 SDK
 - Node.js 18+
 
-### Run Server Examples
+### Run Tests
 ```bash
+# Run all tests (both .NET and TypeScript)
 dotnet test
-```
 
-### Run Device Examples
-```bash
-cd TrinitySQL.Device
-npm install
-npm test
+# Run only .NET tests
+dotnet test --filter "TestCategory!=TypeScript"
+
+# Run only TypeScript tests  
+dotnet test --filter "TestCategory=TypeScript"
 ```
 
 ## Project Structure

@@ -25,4 +25,10 @@
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
 
+  <Target Name="EnsureNpmDependencies" BeforeTargets="Build" Condition="Exists('Device/package.json')">
+    <Exec Command="npm install" 
+          WorkingDirectory="Device"
+          Condition="!Exists('Device/node_modules')" />
+  </Target>
+
 </Project>
