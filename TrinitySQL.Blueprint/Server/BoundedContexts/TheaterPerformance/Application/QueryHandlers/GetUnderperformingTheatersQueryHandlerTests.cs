@@ -9,7 +9,7 @@ using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Application.Queries;
 using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
 using TrinitySQL.Blueprint.BaselineQueries;
 
-namespace TrinitySQL.Blueprint.BoundedContexts.TheaterPerformance.Application.QueryHandlers;
+namespace TrinitySQL.Blueprint.Server.BoundedContexts.TheaterPerformance.Application.QueryHandlers;
 
 [TestClass]
 public class GetUnderperformingTheatersQueryHandlerTests
