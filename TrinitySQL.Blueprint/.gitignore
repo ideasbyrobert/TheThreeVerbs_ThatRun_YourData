@@ -9,3 +9,7 @@ TestResults/
 # Coverage reports
 coverage/
 TestCoverage/
+
+# TypeScript/Node.js
+Device/node_modules/
+Device/package-lock.json

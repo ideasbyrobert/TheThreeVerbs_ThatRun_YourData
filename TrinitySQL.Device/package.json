@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc && node copy-sql-files.js",
     "test": "jest",
+    "test:blueprint": "cd ../TrinitySQL.Blueprint/Device && jest",
     "postinstall": "node copy-sql-files.js"
   },
   "devDependencies": {
