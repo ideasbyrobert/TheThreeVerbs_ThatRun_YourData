@@ -1,6 +1,6 @@
 using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Application.Queries;
 using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
-using TrinitySQL.Blueprint.Server.BaselineQueries;
+using TrinitySQL.Blueprint.Server.BoundedContexts.TheaterPerformance.Baseline;
 using TrinitySQL.Blueprint.Server.TestInfrastructure;
 
 namespace TrinitySQL.Blueprint.Server.BoundedContexts.TheaterPerformance.Application.QueryHandlers;
