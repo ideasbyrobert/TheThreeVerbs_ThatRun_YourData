@@ -1,4 +1,4 @@
-namespace TheaterSales.Extended.MapFilterReduce.Infrastructure.Sorting;
+namespace TheaterSales.Strategy.MapFilterReduce.Infrastructure.Sorting;
 
 public static class FunctionalSort
 {

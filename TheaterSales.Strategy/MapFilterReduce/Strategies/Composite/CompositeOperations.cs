@@ -1,4 +1,4 @@
-namespace TheaterSales.Extended.MapFilterReduce.Strategies.Composite;
+namespace TheaterSales.Strategy.MapFilterReduce.Strategies.Composite;
 
 public static class CompositeOperations
 {

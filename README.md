@@ -25,7 +25,7 @@ npm test
 - **TheaterSales.Blueprint** - Reference implementations demonstrating Map-Filter-Reduce patterns in action
 - **TheaterSales.Common** - Shared database fixtures and test data
 - **TheaterSales.Device** - Implementation for user devices (browsers, mobile, IoT) with local resource processing
-- **TheaterSales.Extended** - The library providing multiple execution strategies (immediate, lazy, memoized, batched)
+- **TheaterSales.Strategy** - The library providing multiple execution strategies (immediate, lazy, memoized, batched)
 - **TheaterSales.Server** - Backend implementation with shared resource processing
 
 ## Core Insight

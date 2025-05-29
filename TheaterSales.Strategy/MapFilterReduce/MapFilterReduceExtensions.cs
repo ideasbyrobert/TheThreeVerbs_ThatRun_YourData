@@ -1,11 +1,11 @@
-using TheaterSales.Extended.MapFilterReduce.Strategies.Basic;
-using TheaterSales.Extended.MapFilterReduce.Strategies.Lazy;
-using TheaterSales.Extended.MapFilterReduce.Strategies.Memoization;
-using TheaterSales.Extended.MapFilterReduce.Strategies.Batch;
-using TheaterSales.Extended.MapFilterReduce.Strategies.Composite;
-using TheaterSales.Extended.MapFilterReduce.Infrastructure.Sorting;
+using TheaterSales.Strategy.MapFilterReduce.Strategies.Basic;
+using TheaterSales.Strategy.MapFilterReduce.Strategies.Lazy;
+using TheaterSales.Strategy.MapFilterReduce.Strategies.Memoization;
+using TheaterSales.Strategy.MapFilterReduce.Strategies.Batch;
+using TheaterSales.Strategy.MapFilterReduce.Strategies.Composite;
+using TheaterSales.Strategy.MapFilterReduce.Infrastructure.Sorting;
 
-namespace TheaterSales.Extended.MapFilterReduce;
+namespace TheaterSales.Strategy.MapFilterReduce;
 
 public static class MapFilterReduceExtensions
 {

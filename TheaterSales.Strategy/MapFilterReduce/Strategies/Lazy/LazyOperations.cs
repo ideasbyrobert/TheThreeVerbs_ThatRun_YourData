@@ -1,4 +1,4 @@
-namespace TheaterSales.Extended.MapFilterReduce.Strategies.Lazy;
+namespace TheaterSales.Strategy.MapFilterReduce.Strategies.Lazy;
 
 public static class LazyOperations
 {

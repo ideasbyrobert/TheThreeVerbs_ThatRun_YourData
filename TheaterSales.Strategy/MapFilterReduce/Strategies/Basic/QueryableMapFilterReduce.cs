@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace TheaterSales.Extended.MapFilterReduce.Strategies.Basic;
+namespace TheaterSales.Strategy.MapFilterReduce.Strategies.Basic;
 
 public static class QueryableMapFilterReduce
 {

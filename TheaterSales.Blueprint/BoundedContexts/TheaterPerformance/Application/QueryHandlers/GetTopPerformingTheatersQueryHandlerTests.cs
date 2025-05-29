@@ -2,7 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.EntityFrameworkCore;
 using TheaterSales.Server.Data;
 using TheaterSales.Server.Domain;
-using TheaterSales.Extended.MapFilterReduce;
+using TheaterSales.Strategy.MapFilterReduce;
 using TheaterSales.Server.Infrastructure;
 using TheaterSales.Server.Core.SharedKernel;
 using TheaterSales.Server.BoundedContexts.TheaterPerformance.Application.Queries;

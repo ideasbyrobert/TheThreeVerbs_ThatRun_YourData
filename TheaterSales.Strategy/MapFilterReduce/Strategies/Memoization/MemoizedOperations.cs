@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace TheaterSales.Extended.MapFilterReduce.Strategies.Memoization;
+namespace TheaterSales.Strategy.MapFilterReduce.Strategies.Memoization;
 
 public static class MemoizedOperations
 {

@@ -1,4 +1,4 @@
-namespace TheaterSales.Extended.MapFilterReduce.Strategies.Batch;
+namespace TheaterSales.Strategy.MapFilterReduce.Strategies.Batch;
 
 public static class BatchOperations
 {

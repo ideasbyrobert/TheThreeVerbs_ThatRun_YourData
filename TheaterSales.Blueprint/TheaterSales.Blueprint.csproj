@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TheaterSales.Server\TheaterSales.Server.csproj" />
-    <ProjectReference Include="..\TheaterSales.Extended\TheaterSales.Extended.csproj" />
+    <ProjectReference Include="..\TheaterSales.Strategy\TheaterSales.Strategy.csproj" />
   </ItemGroup>
 
   <ItemGroup>

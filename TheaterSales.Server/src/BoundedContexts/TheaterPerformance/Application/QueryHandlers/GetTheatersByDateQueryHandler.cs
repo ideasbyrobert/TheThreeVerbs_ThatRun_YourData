@@ -1,7 +1,7 @@
 using TheaterSales.Server.Core.SharedKernel;
 using TheaterSales.Server.Data;
 using TheaterSales.Server.Domain;
-using TheaterSales.Extended.MapFilterReduce;
+using TheaterSales.Strategy.MapFilterReduce;
 using TheaterSales.Server.Infrastructure.EventBus;
 using TheaterSales.Server.BoundedContexts.TheaterPerformance.Application.Queries;
 using TheaterSales.Server.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
