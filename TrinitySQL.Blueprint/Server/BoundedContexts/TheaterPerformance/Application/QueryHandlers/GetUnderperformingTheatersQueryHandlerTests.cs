@@ -1,8 +1,5 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.EntityFrameworkCore;
 using TrinitySQL.Server.Data;
-using TrinitySQL.Server.Domain;
-using TrinitySQL.Core.MapFilterReduce;
 using TrinitySQL.Server.Infrastructure;
 using TrinitySQL.Server.Core.SharedKernel;
 using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Application.Queries;
@@ -108,10 +105,10 @@ public class GetUnderperformingTheatersQueryHandlerTests
         for (int i = 0; i < actual.Count; i++)
         {
             var baselineTheater = baseline.FirstOrDefault(b => b.Theater.Name == actual[i].Theater.Name);
-            
+
             Assert.IsNotNull(baselineTheater,
                 $"Theater '{actual[i].Theater.Name}' should be in baseline underperformers");
-            
+
             Assert.AreEqual(baselineTheater!.TotalRevenue, actual[i].TotalRevenue,
                 $"Revenue calculation for '{actual[i].Theater.Name}' should match baseline");
         }
@@ -178,7 +175,7 @@ public class GetUnderperformingTheatersQueryHandlerTests
         {
             var betterPerformer = underperformers[i - 1];
             var worsePerformer = underperformers[i];
-            
+
             Assert.IsTrue(
                 betterPerformer.TotalRevenue >= worsePerformer.TotalRevenue,
                 FormatOrderingViolationMessage(i, betterPerformer, worsePerformer));

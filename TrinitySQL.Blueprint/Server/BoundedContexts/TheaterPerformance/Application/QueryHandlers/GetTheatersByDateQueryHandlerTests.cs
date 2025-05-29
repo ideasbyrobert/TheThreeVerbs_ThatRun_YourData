@@ -1,4 +1,3 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.EntityFrameworkCore;
 using TrinitySQL.Server.Data;
 using TrinitySQL.Server.Domain;
@@ -72,7 +71,7 @@ public class GetTheatersByDateQueryHandlerTests
     {
         Assert.AreEqual(baseline.Count, actual.Count,
             "Should return same number of theaters as baseline");
-        
+
         for (int i = 0; i < baseline.Count; i++)
         {
             Assert.AreEqual(baseline[i].Theater.Name, actual[i].Theater.Name,

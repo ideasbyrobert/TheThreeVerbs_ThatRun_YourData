@@ -1,7 +1,5 @@
 using TrinitySQL.Server.Data;
-using TrinitySQL.Server.Domain;
 using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
-using Microsoft.EntityFrameworkCore;
 
 namespace TrinitySQL.Blueprint.BaselineQueries;
 
@@ -22,7 +20,7 @@ public class TopPerformingTheatersQuery
         }
 
         var salesInRange = _context.Sales
-            .Where(sale => sale.SaleDate >= dateRange.StartDate && 
+            .Where(sale => sale.SaleDate >= dateRange.StartDate &&
                           sale.SaleDate <= dateRange.EndDate)
             .GroupBy(sale => sale.TheaterId)
             .Select(group => new
@@ -39,7 +37,7 @@ public class TopPerformingTheatersQuery
             {
                 var revenue = salesInRange
                     .FirstOrDefault(s => s.TheaterId == theater.Id)?.TotalRevenue ?? 0m;
-                
+
                 return new TheaterPerformanceResult(theater, revenue);
             })
             .OrderByDescending(result => result.TotalRevenue)

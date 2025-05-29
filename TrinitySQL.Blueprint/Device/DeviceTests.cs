@@ -1,4 +1,3 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Diagnostics;
 
 namespace TrinitySQL.Blueprint.Device;
@@ -14,13 +13,13 @@ public class DeviceTypeScriptTests
     {
         var testEnvironment = new TypeScriptTestEnvironment(TestContext);
         testEnvironment.Validate();
-        
+
         var testRunner = new NpmTestRunner(testEnvironment.WorkingDirectory);
         var result = testRunner.Execute();
-        
+
         var reporter = new TestResultReporter(TestContext);
         reporter.WriteResults(result);
-        
+
         if (result.HasFailures)
             Assert.Fail($"TypeScript tests failed with exit code {result.ExitCode}");
     }
@@ -44,7 +43,7 @@ public class TypeScriptTestEnvironment
     public void Validate()
     {
         testContext.WriteLine($"Running TypeScript tests in: {workingDirectory}");
-        
+
         ValidateDirectoryExists();
         ValidateNpmInstalled();
     }
@@ -66,7 +65,7 @@ public class TypeScriptTestEnvironment
 
             using var process = Process.Start(versionCheck);
             process?.WaitForExit();
-            
+
             if (process?.ExitCode != 0)
                 Assert.Inconclusive("npm is not installed or not in PATH");
         }
@@ -109,7 +108,7 @@ public class NpmTestRunner
 
         using var process = new Process { StartInfo = processInfo };
         var outputCollector = new OutputCollector();
-        
+
         process.OutputDataReceived += outputCollector.CollectOutput;
         process.ErrorDataReceived += outputCollector.CollectError;
 
@@ -180,9 +179,9 @@ public class OutputCollector
     {
         if (string.IsNullOrEmpty(line))
             return;
-            
+
         lines.Add(line);
-        
+
         if (line.Contains("FAIL"))
             hasFailureIndicators = true;
     }
@@ -214,10 +213,10 @@ public class TestResultReporter
     public void WriteResults(TestExecutionResult result)
     {
         testContext.WriteLine("\n=== TypeScript Test Results ===");
-        
+
         foreach (var line in result.Output)
             testContext.WriteLine(line);
-            
+
         testContext.WriteLine("===============================\n");
     }
 }

@@ -1,7 +1,5 @@
 using TrinitySQL.Server.Data;
-using TrinitySQL.Server.Domain;
 using TrinitySQL.Server.BoundedContexts.TheaterPerformance.Domain.ValueObjects;
-using Microsoft.EntityFrameworkCore;
 
 namespace TrinitySQL.Blueprint.BaselineQueries;
 
@@ -33,7 +31,7 @@ public class TheatersByDateQuery
             {
                 var revenue = theatersWithSales
                     .FirstOrDefault(s => s.TheaterId == theater.Id)?.TotalRevenue ?? 0m;
-                
+
                 return new TheaterPerformanceResult(theater, revenue);
             })
             .OrderByDescending(result => result.TotalRevenue)
